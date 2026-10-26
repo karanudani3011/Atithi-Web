@@ -1,2 +1,3 @@
-import {useState} from 'react';import HeroScene from '../components/HeroScene.jsx';import Reveal from '../components/Reveal.jsx';import RoomCard from '../components/RoomCard.jsx';import useRooms from '../hooks/useRooms.js';
-const filters=['All','Deluxe','Suite','Family','Villa'];export default function Rooms(){const [filter,setFilter]=useState('All');const rooms=useRooms();const list=filter==='All'?rooms:rooms.filter(x=>x.type===filter);return <><section className="inner-banner"><HeroScene compact/><div className="banner-copy"><div className="eyebrow">REST WELL, FEEL AT HOME</div><h1>Rooms & <i>Suites</i></h1><p>Spaces made for unhurried mornings and memorable nights.</p></div></section><section className="section rooms-page"><div className="filter-row">{filters.map(x=><button key={x} className={filter===x?'filter active':'filter'} onClick={()=>setFilter(x)}>{x}</button>)}</div><div className="room-grid">{list.map((room,i)=><Reveal key={room.id} delay={i*.06}><RoomCard room={room}/></Reveal>)}</div></section></>}
+import RoomsPage from './RoomsPage.jsx';
+
+export default RoomsPage;

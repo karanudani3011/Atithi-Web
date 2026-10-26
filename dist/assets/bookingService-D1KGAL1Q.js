@@ -1,0 +1,6 @@
+import{c as s}from"./index-DD-5cGoF.js";/**
+ * @license lucide-react v0.468.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const i=s("CalendarDays",[["path",{d:"M8 2v4",key:"1cmpym"}],["path",{d:"M16 2v4",key:"4m81vk"}],["rect",{width:"18",height:"18",x:"3",y:"4",rx:"2",key:"1hopcy"}],["path",{d:"M3 10h18",key:"8toen8"}],["path",{d:"M8 14h.01",key:"6423bh"}],["path",{d:"M12 14h.01",key:"1etili"}],["path",{d:"M16 14h.01",key:"1gbofw"}],["path",{d:"M8 18h.01",key:"lrp35t"}],["path",{d:"M12 18h.01",key:"mhygvu"}],["path",{d:"M16 18h.01",key:"kzsmim"}]]),o="atithi_bookings";function n(){try{const e=JSON.parse(localStorage.getItem(o)||"[]");return Array.isArray(e)?e:[]}catch{return[]}}function c(e){const a=n(),t={status:"Confirmed",...e};return a.push(t),localStorage.setItem(o,JSON.stringify(a)),t}function d(e){const a=n().map(t=>t.bookingId===e?{...t,status:"Cancelled"}:t);return localStorage.setItem(o,JSON.stringify(a)),a.find(t=>t.bookingId===e)||null}function h(e){const a=n().filter(t=>t.bookingId!==e);return localStorage.setItem(o,JSON.stringify(a)),a}export{i as C,d as c,h as d,n as g,c as s};
