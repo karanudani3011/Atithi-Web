@@ -6,18 +6,20 @@ import Img from '../components/Img.jsx';
 import Reveal from '../components/Reveal.jsx';
 import useRooms from '../hooks/useRooms.js';
 import { saveBooking } from '../services/bookingService.js';
+import { getRoomCover, getRoomAmenities, isRoomBookable, roomCapacity, roomPrice } from '../lib/roomUtils.js';
 
 const today = new Date().toISOString().slice(0, 10);
 
 export default function BookingPage() {
   const loc = useLocation();
-  const rooms = useRooms();
+  const roomState = useRooms();
+  const rooms = roomState.rooms;
   const searchParams = new URLSearchParams(loc.search);
   const queryRoom = searchParams.get('room');
   const initial = loc.state || {};
 
   const bookable = rooms.filter(
-    (r) => r.status !== 'Maintenance' && r.status !== 'Booked'
+    isRoomBookable
   );
 
   const initialRoomId =
@@ -68,7 +70,7 @@ export default function BookingPage() {
     return Math.max(0, Math.round(diff / 86400000));
   }, [data.checkin, data.checkout]);
 
-  const subtotal = room ? Number(room.price) * nights : 0;
+  const subtotal = room ? roomPrice(room) * nights : 0;
   const gst = Math.round(subtotal * 0.12);
   const total = subtotal + gst;
 
@@ -95,9 +97,9 @@ export default function BookingPage() {
       return;
     }
 
-    if (Number(data.guests) > room.guests) {
+    if (Number(data.guests) > roomCapacity(room)) {
       setError(
-        `This room welcomes up to ${room.guests} guests. Please choose a room with more space.`
+        `This room welcomes up to ${roomCapacity(room)} guests. Please choose a room with more space.`
       );
       return;
     }
@@ -107,8 +109,8 @@ export default function BookingPage() {
     const result = {
       ...data,
       roomId: room.id,
-      roomName: room.name,
-      roomImage: room.image,
+      roomName: room.room_name,
+      roomImage: getRoomCover(room),
       nights,
       subtotal,
       gst,
@@ -206,7 +208,7 @@ export default function BookingPage() {
                 >
                   {bookable.map((r) => (
                     <option value={r.id} key={r.id}>
-                      {r.name} · ₹{Number(r.price).toLocaleString('en-IN')} / night
+                      {r.room_name} · ₹{roomPrice(r).toLocaleString('en-IN')} / night
                     </option>
                   ))}
                 </select>
@@ -279,12 +281,12 @@ export default function BookingPage() {
         <Reveal delay={0.1}>
           <aside className="booking-summary">
             <h3>Your stay at a glance</h3>
-            <Img src={room.image} alt={room.name} />
+            <Img src={getRoomCover(room)} alt={room.room_name} />
 
             <div className="summary-room">
               <div>
-                <span>{room.type}</span>
-                <h2>{room.name}</h2>
+                <span>{room.room_type}</span>
+                <h2>{room.room_name}</h2>
               </div>
               <strong>★ {room.rating}</strong>
             </div>
@@ -302,7 +304,7 @@ export default function BookingPage() {
 
             <div className="summary-line">
               <span>
-                ₹{Number(room.price).toLocaleString('en-IN')} × {nights || 0} nights
+                ₹{roomPrice(room).toLocaleString('en-IN')} × {nights || 0} nights
               </span>
               <b>₹{subtotal.toLocaleString('en-IN')}</b>
             </div>
