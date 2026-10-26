@@ -2,8 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
-  Calendar,
-  ChevronDown,
   Check,
   ConciergeBell,
   Utensils,
@@ -22,6 +20,7 @@ import DateField from '../components/common/DateField.jsx';
 import GuestStepper from '../components/common/GuestStepper.jsx';
 import { localDateString, nextDate } from '../components/common/dateOnly.js';
 import useRooms from '../hooks/useRooms.js';
+import { getAvailableRoomIds } from '../services/roomService.js';
 import { testimonials } from '../data/testimonials.js';
 
 const services = [
@@ -35,11 +34,17 @@ const services = [
 
 export default function Home() {
   const nav = useNavigate();
-  const roomState = useRooms({ limit: 3, ratingFirst: true });
-  const rooms = roomState.rooms;
+  const roomState = useRooms({ ratingFirst: true });
   const [review, setReview] = useState(0);
   const [search, setSearch] = useState({ checkIn: '', checkOut: '', adults: 1, children: 0 });
   const [dateError, setDateError] = useState('');
+  const [availableIds, setAvailableIds] = useState(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState('');
+  const [availabilityReload, setAvailabilityReload] = useState(0);
+  const datesValid = Boolean(search.checkIn && search.checkOut && search.checkOut > search.checkIn);
+  const allRooms = roomState.rooms;
+  const rooms = allRooms.filter(room => !datesValid || (availableIds && availableIds.includes(String(room.id)))).slice(0, 3);
   const touchStart = useRef(null);
 
   useEffect(() => {
@@ -50,6 +55,16 @@ export default function Home() {
     );
     return () => clearInterval(reviewTimer);
   }, []);
+
+  useEffect(() => {
+    if (!datesValid || !allRooms.length) { setAvailableIds(null); setAvailabilityError(''); setAvailabilityLoading(false); return; }
+    let active = true;
+    const load = () => { setAvailabilityLoading(true); setAvailabilityError(''); getAvailableRoomIds(search.checkIn, search.checkOut)
+      .then(ids => active && setAvailableIds(ids)).catch(error => { if (active) { setAvailableIds([]); setAvailabilityError(error?.message || 'Could not check room availability.'); } })
+      .finally(() => active && setAvailabilityLoading(false)); };
+    load(); window.addEventListener('focus', load);
+    return () => { active = false; window.removeEventListener('focus', load); };
+  }, [datesValid, search.checkIn, search.checkOut, allRooms.length, availabilityReload]);
 
   function swipeEnd(event) {
     if (touchStart.current === null) return;
@@ -67,87 +82,25 @@ export default function Home() {
 
       {/* ── Seamless Booking Search Strip (Preserving Booking Logic) ── */}
       <section className="palace-search-strip">
-        <form
-          className="palace-search-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = new FormData(e.currentTarget);
-            const checkin = f.get('in');
-            const checkout = f.get('out');
-            const guests = f.get('guests') || '2';
-            nav('/booking', {
-              state: {
-                checkin,
-                checkout,
-                guests,
-              },
-            });
-          }}
-        >
-          <div className="search-field">
-            <label htmlFor="search-in">CHECK IN</label>
-            <div
-              className="search-input-wrap"
-              onClick={() => {
-                const el = document.getElementById('search-in');
-                if (el) {
-                  if (typeof el.showPicker === 'function') el.showPicker();
-                  else el.focus();
-                }
-              }}
-            >
-              <input
-                id="search-in"
-                name="in"
-                type="date"
-                min={new Date().toISOString().slice(0, 10)}
-                required
-              />
-              <Calendar size={18} className="search-field-icon" aria-hidden="true" />
-            </div>
-          </div>
-
-          <div className="search-field">
-            <label htmlFor="search-out">CHECK OUT</label>
-            <div
-              className="search-input-wrap"
-              onClick={() => {
-                const el = document.getElementById('search-out');
-                if (el) {
-                  if (typeof el.showPicker === 'function') el.showPicker();
-                  else el.focus();
-                }
-              }}
-            >
-              <input
-                id="search-out"
-                name="out"
-                type="date"
-                min={new Date().toISOString().slice(0, 10)}
-                required
-              />
-              <Calendar size={18} className="search-field-icon" aria-hidden="true" />
-            </div>
-          </div>
-
-          <div className="search-field">
-            <label htmlFor="search-guests">GUESTS</label>
-            <div className="search-input-wrap">
-              <select id="search-guests" name="guests" defaultValue="2">
-                {[1, 2, 3, 4, 5, 6].map((x) => (
-                  <option key={x} value={x}>
-                    {x} {x === 1 ? 'Guest' : 'Guests'}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={17} className="search-field-icon" aria-hidden="true" />
-            </div>
-          </div>
-
-          <button type="submit" className="btn-search-submit">
-            <span>Check Availability</span>
-            <ArrowRight size={17} />
-          </button>
+        <form className="palace-search-form home-booking-search" onSubmit={(event) => {
+          event.preventDefault();
+          if (!search.checkIn || !search.checkOut || search.checkOut <= search.checkIn) {
+            setDateError('Check-in ane check-out date select karo');
+            return;
+          }
+          setDateError('');
+          const params = new URLSearchParams({ checkIn: search.checkIn, checkOut: search.checkOut, adults: String(search.adults), children: String(search.children) });
+          nav(`/rooms?${params.toString()}`);
+        }}>
+          <DateField label="Check-in" id="home-check-in" variant="hero" min={localDateString()} value={search.checkIn}
+            error={dateError && !search.checkIn ? dateError : ''}
+            onChange={(checkIn) => setSearch((current) => ({ ...current, checkIn, checkOut: current.checkOut && current.checkOut <= checkIn ? '' : current.checkOut }))} />
+          <DateField label="Check-out" id="home-check-out" variant="hero" min={search.checkIn ? nextDate(search.checkIn) : nextDate(localDateString())} value={search.checkOut}
+            error={dateError && (!search.checkOut || search.checkOut <= search.checkIn) ? dateError : ''}
+            onChange={(checkOut) => setSearch((current) => ({ ...current, checkOut }))} />
+          <GuestStepper label="Adults" value={search.adults} min={1} max={6} variant="hero" onChange={(adults) => setSearch((current) => ({ ...current, adults }))} />
+          <GuestStepper label="Children" value={search.children} min={0} max={4} variant="hero" onChange={(children) => setSearch((current) => ({ ...current, children }))} />
+          <button type="submit" className="btn-search-submit"><span>Check Availability</span><ArrowRight size={17} /></button>
         </form>
       </section>
 
@@ -254,17 +207,21 @@ export default function Home() {
               Try again
             </button>
           </div>
+        ) : datesValid && availabilityLoading ? (
+          <div className="room-grid featured-room-grid">{[1,2,3].map(item=><div className="room-card room-skeleton" key={item}/>)}</div>
+        ) : availabilityError ? (
+          <div className="empty-state"><h3>Availability check failed</h3><p>{availabilityError}</p><button className="btn gold" onClick={()=>setAvailabilityReload(value=>value+1)}>Retry</button></div>
         ) : rooms.length ? (
           <div className="room-grid featured-room-grid">
             {rooms.map((r, i) => (
               <Reveal delay={i * 0.08} key={r.id}>
-                <RoomTeaser room={r} />
+                <RoomTeaser room={r} bookingQuery={search} />
               </Reveal>
             ))}
           </div>
         ) : (
           <div className="empty-state">
-            We’re preparing our rooms for you. Please check back soon.
+            {datesValid ? <><h3>Aa dates par koi room available nathi</h3><p>Dates badlo athva room listings juo.</p><Link className="btn gold" to="/rooms">Choose different dates</Link></> : 'We’re preparing our rooms for you. Please check back soon.'}
           </div>
         )}
       </section>
@@ -336,8 +293,10 @@ export default function Home() {
   );
 }
 
-function RoomTeaser({ room }) {
+function RoomTeaser({ room, bookingQuery = {} }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const params = new URLSearchParams(Object.entries(bookingQuery).filter(([, value]) => value !== '' && value != null).map(([key, value]) => [key, String(value)]));
+  const detailUrl = `/rooms/${room.id}${params.size ? `?${params}` : ''}`;
   const price = room.price;
   const formattedPrice = Number.isFinite(price) && price >= 0
     ? `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(price)}`
@@ -346,7 +305,7 @@ function RoomTeaser({ room }) {
   return (
     <article className="room-card featured-room-card">
       <div className="room-image">
-        <Link to={`/room/${room.id}`} className="featured-room-image-link" aria-label={`Discover ${room.name}`}>
+        <Link to={detailUrl} className="featured-room-image-link" aria-label={`Discover ${room.name}`}>
           {room.image && !imageFailed ? <img src={room.image} alt={room.name} loading="lazy" onError={() => setImageFailed(true)} /> : <div className="featured-room-placeholder" role="img" aria-label={`${room.name} photo unavailable`}><BedDouble size={38}/><span>Atithi Stay</span></div>}
         </Link>
         <span className="room-type">{room.type}</span>
@@ -354,14 +313,14 @@ function RoomTeaser({ room }) {
       </div>
       <div className="room-body">
         <div className="room-title">
-          <h3><Link to={`/room/${room.id}`} className="room-title-link">{room.name}</Link></h3>
+          <h3><Link to={detailUrl} className="room-title-link">{room.name}</Link></h3>
         </div>
         <p className="featured-room-meta">{size ? `${size} m²` : 'Size not listed'} <span>·</span> Up to {room.guests ?? '—'} guests</p>
         <div className="room-bottom">
           <strong>
             {formattedPrice} {Number.isFinite(price) && <small>/ night</small>}
           </strong>
-          <Link to={`/room/${room.id}`} className="featured-room-discover">Discover <ArrowRight size={15} /></Link>
+          <Link to={detailUrl} className="featured-room-discover">Discover <ArrowRight size={15} /></Link>
         </div>
       </div>
     </article>

@@ -8,7 +8,7 @@ import { localDateString, nextDate } from '../components/common/dateOnly.js';
 import Reveal from '../components/Reveal.jsx';
 import RoomCard from '../components/RoomCard.jsx';
 import useRooms from '../hooks/useRooms.js';
-import { getBookedRanges } from '../services/bookingService.js';
+import { getAvailableRoomIds } from '../services/roomService.js';
 import { filterRooms, hasRoomPopularity } from '../lib/roomFiltering.js';
 import { DEFAULT_ROOM_FILTERS, ROOM_FILTER_TYPES, readRoomFilters, writeRoomFilters } from '../lib/roomFilterParams.js';
 
@@ -22,9 +22,11 @@ export default function Rooms() {
   const [filters, setFilters] = useState(() => readRoomFilters(searchParams));
   const [priceDraft, setPriceDraft] = useState([Number(filters.minPrice), Number(filters.maxPrice)]);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [bookings, setBookings] = useState({});
+  const [availableRoomIds, setAvailableRoomIds] = useState(null);
   const [availabilityError, setAvailabilityError] = useState('');
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityReload, setAvailabilityReload] = useState(0);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
   const priceFilterTimer = useRef(null);
   const dateError = filters.checkIn && filters.checkIn < today ? 'Check-in must be today or later.' : filters.checkOut && !filters.checkIn ? 'Choose a check-in date first.' : filters.checkOut && filters.checkIn && filters.checkOut <= filters.checkIn ? 'Check-out must be after check-in.' : '';
   const datesValid = Boolean(filters.checkIn && filters.checkOut && !dateError);
@@ -34,15 +36,19 @@ export default function Rooms() {
   useEffect(() => () => window.clearTimeout(priceFilterTimer.current), []);
   useEffect(() => setPriceDraft([Number(filters.minPrice), Number(filters.maxPrice)]), [filters.minPrice, filters.maxPrice]);
   useEffect(() => {
-    if (!datesValid || !roomState.rooms.length) { setBookings({}); setAvailabilityError(''); setAvailabilityLoading(false); return; }
+    if (!datesValid || !roomState.rooms.length) { setAvailableRoomIds(null); setAvailabilityError(''); setAvailabilityLoading(false); return; }
     let active = true;
-    setAvailabilityLoading(true); setAvailabilityError('');
-    Promise.all(roomState.rooms.map(async room => [room.id, await getBookedRanges(room.id)]))
-      .then(entries => { if (active) setBookings(Object.fromEntries(entries)); })
-      .catch(error => { if (active) { setAvailabilityError(error.message || 'Could not check room availability.'); setBookings({}); } })
-      .finally(() => { if (active) setAvailabilityLoading(false); });
-    return () => { active = false; };
-  }, [datesValid, filters.checkIn, filters.checkOut, roomState.rooms]);
+    const loadAvailability = () => {
+      setAvailabilityLoading(true); setAvailabilityError('');
+      getAvailableRoomIds(filters.checkIn, filters.checkOut)
+        .then(ids => { if (active) setAvailableRoomIds(ids); })
+        .catch(error => { if (active) { setAvailabilityError(error.message || 'Could not check room availability.'); setAvailableRoomIds([]); } })
+        .finally(() => { if (active) setAvailabilityLoading(false); });
+    };
+    loadAvailability();
+    window.addEventListener('focus', loadAvailability);
+    return () => { active = false; window.removeEventListener('focus', loadAvailability); };
+  }, [datesValid, filters.checkIn, filters.checkOut, roomState.rooms, availabilityReload]);
 
   const update = (key, value) => {
     const next = { ...filters, [key]: String(value) };
@@ -65,7 +71,31 @@ export default function Rooms() {
     priceFilterTimer.current = window.setTimeout(() => setSearchParams(writeRoomFilters(nextFilters), { replace: true }), 250);
   };
 
-  const list = useMemo(() => filterRooms(roomState.rooms, filters, { bookings, datesValid, availabilityLoading, availabilityError }), [roomState.rooms, filters, bookings, datesValid, availabilityLoading, availabilityError]);
+  const list = useMemo(() => {
+    const filtered = filterRooms(roomState.rooms, filters, { datesValid: false });
+    if (!datesValid) return filtered;
+    if (availabilityLoading || availabilityError || !availableRoomIds) return [];
+    const allowed = new Set(availableRoomIds);
+    return filtered.filter(room => allowed.has(String(room.id)));
+  }, [roomState.rooms, filters, datesValid, availableRoomIds, availabilityLoading, availabilityError]);
+
+  const suggestNearbyDates = async () => {
+    if (!filters.checkIn) { document.getElementById('rooms-check-in')?.focus(); return; }
+    setNearbyLoading(true);
+    try {
+      const base = new Date(`${filters.checkIn}T12:00:00`);
+      for (let offset = 1; offset <= 14; offset += 1) {
+        const checkIn = localDateString(new Date(base.getFullYear(), base.getMonth(), base.getDate() + offset));
+        const checkOut = nextDate(checkIn);
+        if ((await getAvailableRoomIds(checkIn, checkOut)).length) {
+          const next = { ...filters, checkIn, checkOut };
+          setFilters(next); setSearchParams(writeRoomFilters(next), { replace: true }); return;
+        }
+      }
+      setAvailabilityError('Could not find an available date in the next two weeks. Try a different range.');
+    } catch (failure) { setAvailabilityError(failure?.message || 'Could not suggest nearby dates.'); }
+    finally { setNearbyLoading(false); }
+  };
 
   const hasPopularity = hasRoomPopularity(roomState.rooms);
   const applyBookingSearch = () => {
@@ -95,12 +125,13 @@ export default function Rooms() {
       <div className="category-row" role="tablist" aria-label="Room categories">
         {categories.map(item => <button key={item} role="tab" aria-selected={categoryIsActive(item)} className={categoryIsActive(item) ? 'filter active' : 'filter'} onClick={() => changeType(item)}>{item}</button>)}
       </div>
-      <p className="rooms-result-count" aria-live="polite">{availabilityLoading ? 'Checking availability…' : `${list.length} ${list.length === 1 ? 'room' : 'rooms'} found`}</p>
+      <p className="rooms-result-count" aria-live="polite">{availabilityLoading ? 'Checking availability…' : datesValid ? `${list.length} ${list.length === 1 ? 'room' : 'rooms'} available for your dates` : `${list.length} ${list.length === 1 ? 'room' : 'rooms'} found`}</p>
       {roomState.loading ? <div className="room-grid">{[1,2,3].map(item => <div className="room-card room-skeleton" key={item} aria-label="Loading room" />)}</div>
         : roomState.error ? <div className="empty-state"><p>{roomState.error}</p><button className="btn gold" onClick={roomState.retry}>Try again</button></div>
           : availabilityLoading ? <p className="availability-loading" role="status">Checking room availability for your dates…</p>
+          : availabilityError ? <div className="rooms-empty"><h3>Availability check failed</h3><p>{availabilityError}</p><button className="btn gold" onClick={() => setAvailabilityReload(value => value + 1)}>Retry</button></div>
           : list.length ? <div className="room-grid">{list.map((room, i) => <Reveal key={room.id} delay={i * .06}><RoomCard room={room} bookingQuery={filters} /></Reveal>)}</div>
-            : <div className="rooms-empty"><h3>No rooms found</h3><p>Try changing your dates or filters.</p><button className="btn gold" type="button" onClick={reset}>Reset filters</button></div>}
+            : <div className="rooms-empty"><h3>{datesValid ? 'Aa dates par koi room available nathi' : 'No rooms found'}</h3><p>{datesValid ? 'Try a nearby date or choose a different stay.' : 'Try changing your dates or filters.'}</p>{datesValid&&<button className="btn gold" type="button" disabled={nearbyLoading} onClick={suggestNearbyDates}>{nearbyLoading?'Checking nearby dates…':'Suggest nearby dates'}</button>}<button className="reset-filter" type="button" onClick={() => document.getElementById('rooms-check-in')?.focus()}>Dates badlo</button><button className="btn gold" type="button" onClick={reset}>Reset filters</button></div>}
     </section>
   </>;
 }

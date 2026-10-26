@@ -1,0 +1,20 @@
+.room-grid>div{height:100%;min-width:0;display:flex}.room-grid>div>.room-card{width:100%}
+.room-card-stretch{height:100%;display:flex;flex-direction:column;min-width:0}
+.room-card-image{height:auto!important;aspect-ratio:4/3;flex:none}
+.room-card-image .room-image-clickable,.room-card-image .room-image-clickable img{display:block;width:100%;height:100%;object-fit:cover}
+.room-card-body{flex:1;display:flex;flex-direction:column;min-width:0}
+.room-number-label{display:block;margin-top:-3px;color:#858b96;font-size:10px}
+.room-card-desc{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:42px}
+.room-card-amenities{height:54px;min-height:54px;overflow:hidden;align-content:flex-start;margin:10px 0 14px}
+.room-card-bottom{display:flex;flex-direction:column;align-items:stretch;gap:11px;margin-top:auto;border-top:0;padding-top:0}
+.room-card-bottom>strong{border-top:1px solid #eee8dd;padding-top:12px}
+.room-card-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.room-card-actions>a,.room-card-actions>button{min-width:0;min-height:42px;height:42px;padding:0 9px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:5px;text-align:center;font-size:11px;font-weight:700;white-space:nowrap;transition:background .2s,color .2s,transform .2s}
+.room-card-view{border:1px solid #14213d;background:transparent;color:#14213d}
+.room-card-view:hover{background:#14213d;color:#fff}
+.room-card-book{border:0;background:linear-gradient(135deg,#e6be7c,#ba8841);color:#0b1a38}
+.room-card-book:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 7px 16px #ba88413b}
+.room-card-book:disabled{opacity:.6;cursor:not-allowed}
+@media(max-width:375px){.room-card-actions{grid-template-columns:1fr}.room-card-actions>a,.room-card-actions>button{width:100%}}
+
+

@@ -9,7 +9,7 @@ import AdminLayout from './admin/AdminLayout.jsx';
 import AdminErrorBoundary from './admin/AdminErrorBoundary.jsx';
 import { useAdminAuth } from './context/AdminAuthContext.jsx';
 import useRole from './hooks/useRole.js';
-const Home=lazy(()=>import('./pages/Home.jsx')),Rooms=lazy(()=>import('./pages/Rooms.jsx')),RoomDetailsPage=lazy(()=>import('./pages/RoomDetailsPage.jsx')),Booking=lazy(()=>import('./pages/Booking.jsx')),About=lazy(()=>import('./pages/About.jsx')),Login=lazy(()=>import('./pages/Login.jsx')),Contact=lazy(()=>import('./pages/Contact.jsx'));
+const Home=lazy(()=>import('./pages/Home.jsx')),Rooms=lazy(()=>import('./pages/Rooms.jsx')),RoomDetailsPage=lazy(()=>import('./pages/RoomDetailsPage.jsx')),Booking=lazy(()=>import('./pages/Booking.jsx')),MyBookings=lazy(()=>import('./pages/MyBookings.jsx')),TrackBooking=lazy(()=>import('./pages/TrackBooking.jsx')),About=lazy(()=>import('./pages/About.jsx')),Login=lazy(()=>import('./pages/Login.jsx')),Contact=lazy(()=>import('./pages/Contact.jsx'));
 const AdminLogin=lazy(()=>import('./admin/pages/AdminLogin.jsx')),Dashboard=lazy(()=>import('./admin/pages/Dashboard.jsx')),AdminRooms=lazy(()=>import('./admin/pages/Rooms.jsx')),Bookings=lazy(()=>import('./admin/pages/Bookings.jsx')),Services=lazy(()=>import('./admin/pages/Services.jsx')),Messages=lazy(()=>import('./admin/pages/Messages.jsx')),AccessManagement=lazy(()=>import('./admin/pages/AccessManagement.jsx')),AdminUsers=lazy(()=>import('./admin/pages/Users.jsx'));
 function Loading({admin=false}){return <div className={admin?'admin-loading':'route-loading'}>{admin?'Atithi Admin':'Atithi'}</div>}
 function ScrollToTop(){const {pathname,search}=useLocation();useEffect(()=>{window.scrollTo({top:0,left:0,behavior:'instant'})},[pathname,search]);return null}
@@ -26,9 +26,12 @@ export function UserRoutes() {
             <Route path="/" element={<Home />} />
             <Route path="/home" element={<Home />} />
             <Route path="/rooms" element={<Rooms />} />
+            <Route path="/rooms/:id" element={<RoomDetailsPage />} />
             <Route path="/room/:id" element={<RoomDetailsPage />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/booking/:roomId" element={<Booking />} />
+            <Route path="/my-bookings" element={<MyBookings />} />
+            <Route path="/track-booking" element={<TrackBooking />} />
             <Route path="/about" element={<About />} />
             <Route path="/login" element={<Login />} />
             <Route path="/contact" element={<Contact />} />

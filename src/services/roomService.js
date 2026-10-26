@@ -9,6 +9,7 @@ const WRITABLE_ROOM_COLUMNS = [
 ];
 
 const friendly = (error, fallback) => new Error(error?.message || fallback);
+export const formatINR = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(value) || 0);
 export function normalizeRoom(row) {
   const imageUrls = Array.isArray(row?.image_urls) ? row.image_urls.filter(Boolean)
     : Array.isArray(row?.images) ? row.images.filter(Boolean)
@@ -76,6 +77,13 @@ export async function getRoomById(id) {
   return row ? normalizeRoom(row) : null;
 }
 
+export async function getAvailableRoomIds(checkIn, checkOut) {
+  ensureSupabaseConfigured();
+  const { data, error } = await supabase.rpc('get_available_room_ids', { p_check_in: checkIn, p_check_out: checkOut });
+  if (error) throw friendly(error, 'Could not check room availability.');
+  return (data || []).map(row => row.room_id ?? row.id ?? row).map(String);
+}
+
 export async function addRoom(room) {
   const row = await request(
     supabase.from('rooms').insert(toRow(room)).select('*').single(),
@@ -109,8 +117,9 @@ export async function uploadRoomImage(file) {
 
 export function subscribeToRoomChanges(callback) {
   if (!isSupabaseConfigured) return () => {};
-  const channel = supabase.channel('public-room-inventory')
+  const channelId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const channel = supabase.channel(`public-room-inventory-${channelId}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, callback)
     .subscribe();
-  return () => supabase.removeChannel(channel);
+  return () => { supabase.removeChannel(channel).catch(error => console.warn('[rooms realtime] channel cleanup failed', error)); };
 }

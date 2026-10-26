@@ -16,12 +16,12 @@ export async function loadDashboard() {
     () => db.from('rooms').select('id', { count: 'exact', head: true }).eq('is_published', true),
     () => db.from('bookings').select('id', { count: 'exact', head: true }),
     () => db.from('bookings').select('id', { count: 'exact', head: true }).eq('booking_status', 'pending'),
-    () => db.from('bookings').select('total_amount').neq('booking_status', 'cancelled'),
+    () => db.from('bookings').select('total_amount').in('booking_status', ['confirmed', 'checked_in', 'checked_out']),
     () => db.from('bookings').select('id', { count: 'exact', head: true }).eq('check_in', today()),
     () => db.from('contact_messages').select('id', { count: 'exact', head: true }),
     () => db.from('users').select('id', { count: 'exact', head: true }),
     () => db.from('bookings').select('*, rooms(room_name)').order('created_at', { ascending: false }).limit(5),
-    () => db.from('bookings').select('total_amount,created_at,booking_status').neq('booking_status', 'cancelled').gte('created_at', sixMonthsAgo.toISOString()).order('created_at', { ascending: true }),
+    () => db.from('bookings').select('total_amount,created_at,booking_status').in('booking_status', ['confirmed', 'checked_in', 'checked_out']).gte('created_at', sixMonthsAgo.toISOString()).order('created_at', { ascending: true }),
   ];
   const settled = await Promise.allSettled(queries.map((query) => Promise.resolve().then(query)));
   const errors = [];

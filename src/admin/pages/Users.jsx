@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Search, UserRoundCheck, UserRoundX } from 'l
 import toast from 'react-hot-toast';
 import { listUsers, setUserActive } from '../../services/admin/adminUserService.js';
 import ConfirmDialog from '../ConfirmDialog.jsx';
+import useRealtimeTable from '../../hooks/useRealtimeTable.js';
 
 const formatDate = (value) => value ? new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
@@ -33,6 +34,7 @@ export default function UsersPage() {
   }, [search, page]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  const { liveAvailable } = useRealtimeTable({ table: 'users', onChange: () => { void refresh(); } });
 
   async function saveStatus() {
     if (!pending) return;
@@ -54,6 +56,7 @@ export default function UsersPage() {
       <div><span className="admin-eyebrow">GUEST ACCOUNTS</span><h1>Users <i>& accounts</i></h1><p>Search and manage registered Atithi users.</p></div>
       <span className="admin-count-pill">{pagination.total} users</span>
     </div>
+    {liveAvailable === false && <p className="admin-live-unavailable" role="status">Live updates unavailable. Users still load normally.</p>}
     <div className="admin-toolbar booking-filterbar">
       <label className="admin-search"><Search/><input value={search} onChange={(event) => { setPage(1); setSearch(event.target.value); }} placeholder="Search name or email" aria-label="Search users"/></label>
     </div>
