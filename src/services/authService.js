@@ -1,1 +1,2 @@
-export function demoAuth(payload){localStorage.setItem('atithi_user',JSON.stringify({name:payload.name||payload.email.split('@')[0],email:payload.email}));return true;}
+import { ensureSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
+export async function authenticateGuest({name,email,password,register=false}){ensureSupabaseConfigured();const result=register?await supabase.auth.signUp({email,password,options:{data:{name:name?.trim()||''}}}):await supabase.auth.signInWithPassword({email,password});if(result.error)throw new Error(result.error.message);return result.data;}

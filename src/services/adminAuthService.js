@@ -1,16 +1,21 @@
-const USERS_KEY='atithi_admin_users';
-const SESSION_KEY='atithi_admin_session';
-const USERS_EVENT='atithi:admin-users-changed';
-const SUPER_ADMIN={id:'admin',password:'admin123',name:'Super Admin',email:'admin',role:'super_admin'};
-const readUsers=()=>{try{const value=JSON.parse(localStorage.getItem(USERS_KEY)||'[]');return Array.isArray(value)?value:[]}catch{return[]}};
-export function getAdminUsers(){return readUsers().map(({password,...user})=>user)}
-function changed(){window.dispatchEvent(new Event(USERS_EVENT))}
-export function createAdminUser({name,email,password}){const users=readUsers();if(users.some(user=>user.email.toLowerCase()===email.trim().toLowerCase()))throw new Error('An admin already uses this email.');const user={id:globalThis.crypto?.randomUUID?.()||`admin-${Date.now()}`,name:name.trim(),email:email.trim().toLowerCase(),password,createdAt:new Date().toISOString()};users.push(user);localStorage.setItem(USERS_KEY,JSON.stringify(users));changed();return user}
-export function updateAdminUser(id,{name,password}){const users=readUsers(),i=users.findIndex(user=>user.id===id);if(i<0)throw new Error('Admin user not found.');users[i]={...users[i],name:name.trim(),...(password?{password}:{})};localStorage.setItem(USERS_KEY,JSON.stringify(users));changed();return users[i]}
-export function deleteAdminUser(id){const users=readUsers().filter(user=>user.id!==id);localStorage.setItem(USERS_KEY,JSON.stringify(users));changed();return true}
-export function authenticateAdmin(id,password){if(id==='admin'&&password===SUPER_ADMIN.password)return {name:SUPER_ADMIN.name,email:SUPER_ADMIN.email,role:SUPER_ADMIN.role};const user=readUsers().find(item=>item.email.toLowerCase()===id.trim().toLowerCase()&&item.password===password);return user?{name:user.name,email:user.email,role:'sub_admin'}:null}
-export function getAdminSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null')}catch{return null}}
-export function isAdminSessionValid(session){return session?.role==='super_admin'||(session?.role==='sub_admin'&&readUsers().some(user=>user.email.toLowerCase()===session.email?.toLowerCase()))}
-export const adminUsersChangedEvent=USERS_EVENT;
-export function setAdminSession(session){localStorage.setItem(SESSION_KEY,JSON.stringify(session));return session}
-export function clearAdminSession(){localStorage.removeItem(SESSION_KEY)}
+import { ensureSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
+
+const friendly = error => new Error(error?.message || 'Something went wrong. Please try again.');
+async function edgeCall(name, body) { const { data, error } = await supabase.functions.invoke(name, { body }); if (error) { let payload; try { payload = await error.context?.json(); } catch {} throw new Error(payload?.error || error.message || 'The admin request failed.'); } if (data?.error) throw new Error(data.error); return data; }
+export async function authenticateAdmin(id, password) {
+  ensureSupabaseConfigured();
+  const email = String(id || '').trim().includes('@') ? String(id).trim() : String(id).trim().toLowerCase() === 'admin' ? 'admin@atithi.com' : String(id).trim();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw friendly(new Error('The ID or password you entered is incorrect. Please try again.'));
+  const { data: profile, error: profileError } = await supabase.from('admin_profiles').select('id,name,email,role').eq('id', data.user.id).maybeSingle();
+  if (profileError || !profile) { await supabase.auth.signOut(); throw new Error('Access denied. This account is not an Atithi administrator.'); }
+  return { user: data.user, session: data.session, profile };
+}
+export async function getAdminProfile(userId) { ensureSupabaseConfigured(); const { data, error } = await supabase.from('admin_profiles').select('id,name,email,role').eq('id', userId).maybeSingle(); if (error) throw friendly(error); return data; }
+export async function getCurrentAuthSession() { const { data, error } = await supabase.auth.getSession(); if (error) throw friendly(error); return data.session; }
+export async function getAdminUsers() { ensureSupabaseConfigured(); const { data, error } = await supabase.from('admin_profiles').select('*').eq('role', 'sub_admin'); if (error) throw friendly(error); return (data || []).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)); }
+export async function createAdminUser(user) { ensureSupabaseConfigured(); return edgeCall('create-admin', { name: user.name.trim(), email: user.email.trim().toLowerCase(), password: user.password }); }
+export async function updateAdminUser(id, changes) { ensureSupabaseConfigured(); const { data, error } = await supabase.from('admin_profiles').update({ name: changes.name.trim() }).eq('id', id).select('*').single(); if (error) throw friendly(error); return data; }
+export async function deleteAdminUser(id) { ensureSupabaseConfigured(); await edgeCall('delete-admin', { id }); return true; }
+export const onAdminAuthChange = callback => supabase.auth.onAuthStateChange(callback);
+export async function signOutAdmin() { const { error } = await supabase.auth.signOut(); if (error) throw friendly(error); }

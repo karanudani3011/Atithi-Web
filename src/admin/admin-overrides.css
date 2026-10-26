@@ -7,3 +7,4 @@
 .admin-table:not(.access-table){min-width:1120px}
 @media(max-width:639px){.access-layout{display:flex}.admin-table:not(.access-table){min-width:1120px}}
 
+.admin-skeleton-card{display:grid;gap:12px}.admin-skeleton-card>span{display:block;height:18px;border-radius:9px;background:linear-gradient(100deg,#eee9df 30%,#fbf7ee 50%,#eee9df 70%);background-size:200% 100%;animation:adminSkeleton 1.25s linear infinite}.admin-skeleton-card>span:nth-child(2){width:76%}.admin-skeleton-card>span:nth-child(3){width:54%}@keyframes adminSkeleton{to{background-position:-200% 0}}@media(prefers-reduced-motion:reduce){.admin-skeleton-card>span{animation:none}}

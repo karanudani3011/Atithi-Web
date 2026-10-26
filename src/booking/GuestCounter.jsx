@@ -1,0 +1,2 @@
+import { Minus, Plus } from 'lucide-react';
+export default function GuestCounter({label,detail,value,min,max,onChange}) { return <div className="guest-counter"><div><b>{label}</b><small>{detail}</small></div><div className="guest-stepper"><button type="button" aria-label={`Remove ${label}`} disabled={value<=min} onClick={()=>onChange(Math.max(min,value-1))}><Minus size={15}/></button><strong>{value}</strong><button type="button" aria-label={`Add ${label}`} disabled={value>=max} onClick={()=>onChange(Math.min(max,value+1))}><Plus size={15}/></button></div></div>; }

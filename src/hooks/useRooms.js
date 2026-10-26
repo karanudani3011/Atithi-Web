@@ -1,3 +1,9 @@
-import {useCallback,useEffect,useState} from 'react';
-import {getRooms,roomsChangedEvent} from '../services/roomService.js';
-export default function useRooms(){const [rooms,setRooms]=useState(()=>getRooms());const refresh=useCallback(()=>setRooms(getRooms()),[]);useEffect(()=>{window.addEventListener(roomsChangedEvent,refresh);return()=>window.removeEventListener(roomsChangedEvent,refresh)},[refresh]);return rooms}
+import { useCallback, useEffect, useState } from 'react';
+import { getRooms, subscribeToRoomChanges } from '../services/roomService.js';
+
+export default function useRooms() {
+  const [rooms, setRooms] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  const refresh = useCallback(async () => { setLoading(true); setError(''); try { setRooms(await getRooms()); } catch (failure) { setError(failure.message || 'Could not load rooms.'); } finally { setLoading(false); } }, []);
+  useEffect(() => { refresh();const unsubscribe=subscribeToRoomChanges(()=>refresh());return unsubscribe; }, [refresh]);
+  return { rooms, loading, error, retry: refresh };
+}

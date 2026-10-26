@@ -1,10 +1,13 @@
-import {rooms as seedRooms} from '../data/rooms.js';
-const KEY='atithi_rooms',EVENT='atithi:rooms-changed';
-function read(){try{const value=JSON.parse(localStorage.getItem(KEY)||'null');return Array.isArray(value)?value:null}catch{return null}}
-function seed(){const current=read();if(current)return current;const copy=seedRooms.map(room=>({...room,status:room.status||'Available'}));localStorage.setItem(KEY,JSON.stringify(copy));return copy}
-function write(rooms){localStorage.setItem(KEY,JSON.stringify(rooms));window.dispatchEvent(new CustomEvent(EVENT));return rooms}
-export function getRooms(){return seed()}
-export function addRoom(room){const list=getRooms(),id=Math.max(0,...list.map(item=>Number(item.id)||0))+1;const created={...room,id,amenities:Array.isArray(room.amenities)?room.amenities:[]};write([...list,created]);return created}
-export function updateRoom(id,changes){const list=getRooms().map(room=>String(room.id)===String(id)?{...room,...changes,id:room.id,amenities:Array.isArray(changes.amenities)?changes.amenities:room.amenities}:room);write(list);return list.find(room=>String(room.id)===String(id))}
-export function deleteRoom(id){return write(getRooms().filter(room=>String(room.id)!==String(id)))}
-export const roomsChangedEvent=EVENT;
+import { ensureSupabaseConfigured, isSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
+
+const friendly = (error, fallback) => new Error(error?.message?.replace(/^.*?: /, '') || fallback);
+const fromRow = (row) => ({ ...row, image: row.image_url || row.image || '', guests: row.max_guests ?? row.guests ?? 1, bedType: row.bed_type || row.bedType || 'King bed', images: row.images || (row.image_url ? [row.image_url] : []) });
+const toRow = (room) => ({ name: room.name, type: room.type, price: Number(room.price), size: Number(room.size), bed_type: room.bed_type || room.bedType || 'King bed', max_guests: Number(room.max_guests ?? room.guests ?? 1), rating: Number(room.rating || 0), status: room.status || 'Available', description: room.description || '', image_url: room.image_url || room.image || '', images: room.images || (room.image_url || room.image ? [room.image_url || room.image] : []), amenities: Array.isArray(room.amenities) ? room.amenities : [] });
+async function request(query, fallback) { ensureSupabaseConfigured(); const { data, error } = await query; if (error) throw friendly(error, fallback); return data; }
+export async function getRooms() { return (await request(supabase.from('rooms').select('*').order('name'), 'Could not load rooms.')).map(fromRow); }
+export async function getRoomById(id) { if (!id) return null; const row = await request(supabase.from('rooms').select('*').eq('id', id).maybeSingle(), 'Could not load this room.'); return row ? fromRow(row) : null; }
+export async function addRoom(room) { const row = await request(supabase.from('rooms').insert(toRow(room)).select('*').single(), 'Could not add this room.'); return fromRow(row); }
+export async function updateRoom(id, changes) { const row = await request(supabase.from('rooms').update(toRow(changes)).eq('id', id).select('*').single(), 'Could not update this room.'); return fromRow(row); }
+export async function deleteRoom(id) { await request(supabase.from('rooms').delete().eq('id', id), 'Could not delete this room.'); return true; }
+export async function uploadRoomImage(file) { const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'; const path = `rooms/${crypto.randomUUID()}.${ext}`; await request(supabase.storage.from('room-images').upload(path, file, { upsert: false, contentType: file.type }), 'Could not upload this image.'); return supabase.storage.from('room-images').getPublicUrl(path).data.publicUrl; }
+export function subscribeToRoomChanges(callback) { if (!isSupabaseConfigured) return () => {}; const channel=supabase.channel('public-room-inventory').on('postgres_changes',{event:'*',schema:'public',table:'rooms'},callback).subscribe();return()=>supabase.removeChannel(channel); }
