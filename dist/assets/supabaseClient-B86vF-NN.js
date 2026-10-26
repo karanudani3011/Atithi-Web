@@ -1,0 +1,1 @@
+import{c as e}from"./supabase-s3XNS0mn.js";const s=void 0,a=e("https://missing.supabase.co","missing-anon-key"),o=!!s;function t(){throw new Error("Supabase is not configured yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart Vite.")}export{t as e,o as i,a as s};
