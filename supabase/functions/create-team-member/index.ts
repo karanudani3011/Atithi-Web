@@ -12,7 +12,7 @@ const respond = (body: unknown, status = 200) => new Response(JSON.stringify(bod
 });
 
 Deno.serve(async (request) => {
-  if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (request.method === 'OPTIONS') return new Response('ok', { status: 200, headers: corsHeaders });
   if (request.method !== 'POST') return respond({ error: 'Method not allowed.' }, 405);
 
   const authorization = request.headers.get('Authorization') || '';
@@ -21,7 +21,10 @@ Deno.serve(async (request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!supabaseUrl || !serviceRoleKey) return respond({ error: 'Server configuration is incomplete.' }, 500);
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error('[create-team-member] missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    return respond({ error: 'Server configuration is incomplete. Supabase Function secrets check karo.' }, 500);
+  }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -29,7 +32,10 @@ Deno.serve(async (request) => {
 
   const { data: authData, error: authError } = await supabase.auth.getUser(token);
   const caller = authData?.user;
-  if (authError || !caller) return respond({ error: 'Your session expired. Please sign in again.' }, 401);
+  if (authError || !caller) {
+    console.error('[create-team-member] caller JWT verification failed', authError);
+    return respond({ error: 'Your session expired. Please sign in again.' }, 401);
+  }
 
   const { data: callerProfile, error: profileError } = await supabase
     .from('admin_profiles')
@@ -37,12 +43,16 @@ Deno.serve(async (request) => {
     .eq('id', caller.id)
     .maybeSingle();
   if (profileError || callerProfile?.role !== 'admin' || callerProfile?.is_active !== true) {
-    return respond({ error: 'Access denied. Fakat active admin team members add kari shake.' }, 403);
+    console.error('[create-team-member] caller is not an active admin', { callerId: caller.id, profileError, role: callerProfile?.role, isActive: callerProfile?.is_active });
+    return respond({ error: 'Only admins can give access.' }, 403);
   }
 
   let body: Record<string, unknown>;
   try { body = await request.json(); }
-  catch { return respond({ error: 'Request body valid JSON hovu joiye.' }, 400); }
+  catch {
+    console.warn('[create-team-member] invalid JSON request body');
+    return respond({ error: 'Request body valid JSON hovu joiye.' }, 400);
+  }
 
   const name = String(body.name || '').trim();
   const email = String(body.email || '').trim().toLowerCase();
@@ -50,10 +60,12 @@ Deno.serve(async (request) => {
   const role = String(body.role || '');
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  if (!name) return respond({ error: 'Name jaruri che.' }, 400);
-  if (!validEmail) return respond({ error: 'Valid email address lakho.' }, 400);
-  if (password.length < 8) return respond({ error: 'Password minimum 8 characters nu hovu joiye.' }, 400);
-  if (!['admin', 'staff'].includes(role)) return respond({ error: 'Role admin athva staff hovu joiye.' }, 400);
+  if (!name) { console.warn('[create-team-member] validation failed: missing name'); return respond({ error: 'Name jaruri che.' }, 400); }
+  if (!validEmail) { console.warn('[create-team-member] validation failed: invalid email'); return respond({ error: 'Valid email address lakho.' }, 400); }
+  if (password.length < 8) { console.warn('[create-team-member] validation failed: password too short', { email }); return respond({ error: 'Password min 8 characters.' }, 400); }
+  if (!['admin', 'staff'].includes(role)) { console.warn('[create-team-member] validation failed: invalid role', { email, role }); return respond({ error: 'Role admin athva staff hovu joiye.' }, 400); }
+
+  console.info('[create-team-member] validated request', { callerId: caller.id, email, role });
 
   const { data: created, error: createError } = await supabase.auth.admin.createUser({
     email,
@@ -63,8 +75,9 @@ Deno.serve(async (request) => {
   });
 
   if (createError || !created?.user) {
-    const duplicate = /already|registered|exists/i.test(createError?.message || '');
-    return respond({ error: duplicate ? 'Aa email par account pehlethi che.' : 'Account create na thayu. Please try again.' }, duplicate ? 409 : 400);
+    const duplicate = /already|registered|exists|duplicate/i.test(createError?.message || '');
+    console.error('[create-team-member] auth.admin.createUser failed', { status: createError?.status, code: createError?.code, message: createError?.message });
+    return respond({ error: duplicate ? 'Aa email thi account pehla thi che.' : createError?.message || 'Account create na thayu. Please try again.' }, duplicate ? 409 : 400);
   }
 
   const { data: profile, error: insertError } = await supabase
@@ -81,11 +94,13 @@ Deno.serve(async (request) => {
     .single();
 
   if (insertError || !profile) {
+    console.error('[create-team-member] admin_profiles insert failed; rolling back auth user', { userId: created.user.id, code: insertError?.code, message: insertError?.message });
     const { error: rollbackError } = await supabase.auth.admin.deleteUser(created.user.id);
-    if (rollbackError) console.error('New Auth user rollback failed', rollbackError);
+    if (rollbackError) console.error('[create-team-member] Auth user rollback failed', rollbackError);
     const duplicate = /duplicate|unique/i.test(insertError?.message || '');
-    return respond({ error: duplicate ? 'Aa email team access ma pehlethi che.' : 'Profile save na thayu; account rollback kari didhu.' }, duplicate ? 409 : 500);
+    return respond({ error: duplicate ? 'Aa email thi account pehla thi che.' : insertError?.message || 'Profile save na thayu; account rollback kari didhu.' }, duplicate ? 409 : 500);
   }
 
+  console.info('[create-team-member] team member created', { userId: profile.id, role: profile.role });
   return respond({ data: profile }, 201);
 });

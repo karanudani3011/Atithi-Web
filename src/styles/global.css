@@ -517,4 +517,13 @@
   }
 }
 
+/* Home booking search bar: shared responsive layout for dates and guest steppers. */
+.home-booking-search{grid-template-columns:minmax(130px,1.05fr) minmax(130px,1.05fr) minmax(105px,.82fr) minmax(105px,.82fr) auto;gap:14px;padding:18px 22px;border-radius:22px}
+.home-booking-search>.search-field,.home-booking-search>.guest-stepper-field{min-width:0}
+.home-booking-search>.search-field:nth-child(1),.home-booking-search>.search-field:nth-child(2),.home-booking-search>.guest-stepper-field:nth-child(3){padding-right:13px;border-right:1px solid #e2bf7335}
+.home-booking-search .btn-search-submit{min-height:48px;white-space:nowrap;padding:0 20px}
+.home-search-error{max-width:1180px;margin:8px auto 0;color:#ffc2b9;font-size:11px}
+@media(max-width:1050px){.home-booking-search{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 22px}.home-booking-search>.search-field:nth-child(1),.home-booking-search>.search-field:nth-child(2),.home-booking-search>.guest-stepper-field:nth-child(3){padding-right:0;border-right:0}.home-booking-search .btn-search-submit{grid-column:1/-1;justify-content:center}}
+@media(max-width:600px){.palace-search-strip{padding:18px 17px 26px}.home-booking-search{grid-template-columns:1fr;gap:14px;padding:18px;border-radius:18px}.home-booking-search .btn-search-submit{grid-column:auto;width:100%;min-height:48px}.home-search-error{padding:0 3px}}
+
 
