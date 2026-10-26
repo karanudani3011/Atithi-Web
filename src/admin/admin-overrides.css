@@ -1,0 +1,9 @@
+.access-layout{display:flex;flex-direction:column;align-items:stretch;gap:17px}
+.access-form-panel{width:min(100%,720px)}
+.access-table{min-width:650px}
+.access-name-cell{display:flex;align-items:center;gap:8px}
+.access-name-cell strong{color:#24314b;font-size:10px}
+.access-name-cell .access-user-avatar{width:29px;height:29px;font-size:13px;flex:none}
+.admin-table:not(.access-table){min-width:1120px}
+@media(max-width:639px){.access-layout{display:flex}.admin-table:not(.access-table){min-width:1120px}}
+

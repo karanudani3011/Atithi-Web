@@ -1,0 +1,2 @@
+import {motion} from 'framer-motion';import Counter from '../components/Counter.jsx';
+export default function StatCard({label,value,icon:Icon,format='number',delay=0}){return <motion.article className="admin-stat" initial={{opacity:0,y:14}} animate={{opacity:1,y:0}} transition={{delay,duration:.35}}><div className="admin-stat-icon"><Icon size={20}/></div><span>{label}</span><strong>{format==='currency'?'₹':''}<Counter to={Number(value)||0}/></strong></motion.article>}

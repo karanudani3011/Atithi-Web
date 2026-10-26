@@ -1,0 +1,2 @@
+import {useEffect,useState} from 'react';
+export default function useSplashAnimation(onFinish){const [t,setT]=useState(0);useEffect(()=>{let start=performance.now(),frame,done=false;const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;function tick(now){if(done)return;const elapsed=reduced?Math.min((now-start)/1000,1.5):(now-start)/1000;setT(elapsed);if(elapsed>=(reduced?1.5:9.2)){done=true;onFinish?.()}else frame=requestAnimationFrame(tick)}frame=requestAnimationFrame(tick);return()=>{done=true;cancelAnimationFrame(frame)}},[onFinish]);return t}

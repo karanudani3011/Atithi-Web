@@ -1,0 +1,1 @@
+export const siteConfig={name:'Atithi',tagline:'Better Stays. Happier Guests.',address:'12 Palace Road, Ahmedabad, Gujarat 380001',phone:'+91 79 4000 2020',email:'hello@atithihotel.com',map:'https://maps.google.com/maps?q=Ahmedabad%20Gujarat&t=&z=13&ie=UTF8&iwloc=&output=embed'};

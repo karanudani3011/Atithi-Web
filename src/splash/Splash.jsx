@@ -1,0 +1,2 @@
+import {useCallback,useState} from 'react';import useSplashAnimation from './useSplashAnimation.js';import SplashScene from './SplashScene.jsx';
+export default function Splash({onFinish}){const [ended,setEnded]=useState(false);const finish=useCallback(()=>{if(!ended){setEnded(true);setTimeout(onFinish,650)}},[ended,onFinish]);const t=useSplashAnimation(finish);return <div className={`splash ${ended?'splash-out':''}`}><button className="skip" onClick={finish}>SKIP ›</button><SplashScene t={t}/><div className="loading-dots"><i/><i/><i/></div></div>}

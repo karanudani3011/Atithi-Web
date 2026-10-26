@@ -1,0 +1,2 @@
+import {motion} from 'framer-motion';
+export default function Reveal({children,className='',delay=0,direction='up'}){const offset=direction==='left'?{x:-28}:direction==='right'?{x:28}:direction==='zoom'?{scale:.94}:{y:24};return <motion.div className={className} initial={{opacity:0,...offset}} whileInView={{opacity:1,x:0,y:0,scale:1}} viewport={{once:true,amount:.12}} transition={{duration:.65,delay,ease:[.22,.7,.2,1]}}>{children}</motion.div>}
