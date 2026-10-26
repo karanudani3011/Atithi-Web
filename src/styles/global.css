@@ -12,7 +12,7 @@
 
 /* ── Transparent Header & Brand Logo ── */
 .palace-header {
-  height: 96px;
+  height: 84px;
   background: transparent;
   transition: background 0.35s ease, backdrop-filter 0.35s ease, box-shadow 0.35s ease;
 }
@@ -54,7 +54,7 @@
 }
 
 .palace-nav-link {
-  height: 96px;
+  height: 84px;
   display: flex;
   align-items: center;
   font-family: 'DM Sans', sans-serif;
@@ -76,7 +76,7 @@
 .palace-nav-link.active::after {
   content: '';
   position: absolute;
-  bottom: 28px;
+  bottom: 22px;
   left: 0;
   right: 0;
   height: 2px;
@@ -87,18 +87,26 @@
 .palace-login-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
-  padding: 5px 15px;
+  width: auto;
+  min-width: 72px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 12px;
   border: 1px solid rgba(226, 191, 115, 0.6);
-  border-radius: 99px;
-  background: rgba(9, 21, 48, 0.45);
+  border-radius: 8px;
+  background: rgba(9, 21, 48, 0.55);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   color: #ffffff;
   font-family: 'DM Sans', sans-serif;
-  font-size: 11.5px;
-  font-weight: 500;
-  line-height: 1.2;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  align-self: center;
+  box-sizing: border-box;
   transition: all 0.25s ease;
 }
 
@@ -107,11 +115,12 @@
   border-color: #f7dda7;
   color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(226, 191, 115, 0.25);
+  box-shadow: 0 4px 12px rgba(226, 191, 115, 0.25);
 }
 
 .palace-login-btn .login-arrow {
   transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .palace-login-btn:hover .login-arrow {
@@ -122,14 +131,14 @@
 .palace-hero-section {
   position: relative;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
+  min-height: clamp(560px, 68vh, 740px);
   display: flex;
   align-items: center;
   overflow: hidden;
   background: #040b18;
   color: #ffffff;
-  padding: 130px max(5.5vw, 36px) 110px;
+  padding: 104px max(5.5vw, 36px) 50px;
+  box-sizing: border-box;
 }
 
 /* Background Palace Image Layer */
@@ -248,7 +257,7 @@
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 2px;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 .palace-gold-badge .badge-star {
@@ -259,12 +268,12 @@
 /* Main Headline */
 .palace-main-title {
   font-family: var(--serif);
-  font-size: clamp(42px, 5.2vw, 76px);
+  font-size: clamp(38px, 4.6vw, 68px);
   font-weight: 500;
   line-height: 1.12;
   color: #ffffff;
   letter-spacing: -0.6px;
-  margin: 0 0 22px;
+  margin: 0 0 16px;
 }
 
 .palace-title-italic {
@@ -278,11 +287,11 @@
 /* Description */
 .palace-main-desc {
   font-family: 'DM Sans', sans-serif;
-  font-size: clamp(14px, 1.3vw, 16px);
-  line-height: 1.85;
+  font-size: clamp(13.5px, 1.2vw, 15px);
+  line-height: 1.75;
   color: #d1d7e4;
-  max-width: 530px;
-  margin: 0 0 32px;
+  max-width: 520px;
+  margin: 0 0 24px;
 }
 
 /* CTA Row */
@@ -290,7 +299,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
@@ -377,7 +386,7 @@
 /* ── Hero Slider Controls (Bottom-Right Circular Buttons) ── */
 .palace-slider-controls {
   position: absolute;
-  bottom: 40px;
+  bottom: 26px;
   right: max(5.5vw, 36px);
   z-index: 15;
   display: flex;
@@ -388,8 +397,8 @@
 }
 
 .palace-slider-btn {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background: rgba(6, 17, 38, 0.65);
   backdrop-filter: blur(14px);
@@ -413,23 +422,23 @@
 /* ── Booking Search Strip ── */
 .palace-search-strip {
   background: linear-gradient(180deg, #040b18 0%, #08142a 100%);
-  padding: 24px max(5.5vw, 36px) 36px;
+  padding: 16px max(5.5vw, 36px) 24px;
   border-bottom: 1px solid rgba(226, 191, 115, 0.15);
+  box-sizing: border-box;
 }
 
 .palace-search-form {
   max-width: 1180px;
   margin: 0 auto;
-  background: rgba(14, 28, 58, 0.75);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 191, 115, 0.35);
+  background: #FFF1D6;
+  border: 1px solid #D6AD62;
   border-radius: 20px;
-  padding: 16px 24px;
+  padding: 16px 30px;
   display: grid;
-  grid-template-columns: 1fr 1fr 0.8fr auto;
-  gap: 20px;
+  grid-template-columns: 1.15fr 1.15fr 1fr auto;
+  gap: 28px;
   align-items: center;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(214, 173, 98, 0.15);
 }
 
 .search-field {
@@ -440,27 +449,82 @@
 
 .search-field label {
   font-family: 'DM Sans', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   letter-spacing: 1.5px;
-  color: #e2bf73;
+  color: #10203D;
+  text-transform: uppercase;
 }
 
-.search-field input,
-.search-field select {
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  cursor: pointer;
+}
+
+.search-field input {
+  width: 100%;
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: #10203D;
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   outline: none;
-  padding: 4px 0;
+  padding: 4px 32px 4px 0;
+  color-scheme: light;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.search-field select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #10203D;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+  padding: 4px 32px 4px 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  box-sizing: border-box;
+}
+
+.search-field input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.search-field-icon {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #10203D;
+  pointer-events: none;
+  transition: transform 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.search-input-wrap:hover .search-field-icon {
+  transform: translateY(-50%) scale(1.08);
+  color: #0b172d;
 }
 
 .search-field select option {
-  background: #0b1a38;
-  color: #ffffff;
+  background: #FFF1D6;
+  color: #10203D;
 }
 
 .btn-search-submit {
@@ -468,21 +532,21 @@
   align-items: center;
   gap: 10px;
   background: linear-gradient(135deg, #e8c784 0%, #d4a654 100%);
-  color: #0a1630;
+  color: #10203D;
   border: none;
   border-radius: 99px;
-  padding: 13px 26px;
+  padding: 14px 28px;
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.22s, box-shadow 0.22s;
-  box-shadow: 0 6px 20px rgba(212, 166, 84, 0.3);
+  box-shadow: 0 6px 20px rgba(212, 166, 84, 0.35);
 }
 
 .btn-search-submit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(212, 166, 84, 0.5);
+  box-shadow: 0 10px 25px rgba(212, 166, 84, 0.55);
 }
 
 /* ── Responsive Adaptations ── */
@@ -514,6 +578,10 @@
   }
   .btn-search-submit {
     justify-content: center;
+  }
+  .palace-login-btn {
+    width: 100%;
+    margin-top: 20px;
   }
 }
 

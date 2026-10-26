@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
+  Calendar,
+  ChevronDown,
   Check,
   ConciergeBell,
   Utensils,
@@ -75,35 +77,62 @@ export default function Home() {
         >
           <div className="search-field">
             <label htmlFor="search-in">CHECK IN</label>
-            <input
-              id="search-in"
-              name="in"
-              type="date"
-              min={new Date().toISOString().slice(0, 10)}
-              required
-            />
+            <div
+              className="search-input-wrap"
+              onClick={() => {
+                const el = document.getElementById('search-in');
+                if (el) {
+                  if (typeof el.showPicker === 'function') el.showPicker();
+                  else el.focus();
+                }
+              }}
+            >
+              <input
+                id="search-in"
+                name="in"
+                type="date"
+                min={new Date().toISOString().slice(0, 10)}
+                required
+              />
+              <Calendar size={18} className="search-field-icon" aria-hidden="true" />
+            </div>
           </div>
 
           <div className="search-field">
             <label htmlFor="search-out">CHECK OUT</label>
-            <input
-              id="search-out"
-              name="out"
-              type="date"
-              min={new Date().toISOString().slice(0, 10)}
-              required
-            />
+            <div
+              className="search-input-wrap"
+              onClick={() => {
+                const el = document.getElementById('search-out');
+                if (el) {
+                  if (typeof el.showPicker === 'function') el.showPicker();
+                  else el.focus();
+                }
+              }}
+            >
+              <input
+                id="search-out"
+                name="out"
+                type="date"
+                min={new Date().toISOString().slice(0, 10)}
+                required
+              />
+              <Calendar size={18} className="search-field-icon" aria-hidden="true" />
+            </div>
           </div>
 
           <div className="search-field">
             <label htmlFor="search-guests">GUESTS</label>
-            <select id="search-guests" name="guests" defaultValue="2">
-              {[1, 2, 3, 4, 5, 6].map((x) => (
-                <option key={x} value={x}>
-                  {x} {x === 1 ? 'Guest' : 'Guests'}
-                </option>
-              ))}
-            </select>
+            <div className="search-input-wrap">
+              <select id="search-guests" name="guests" defaultValue="2">
+                {[1, 2, 3, 4, 5, 6].map((x) => (
+                  <option key={x} value={x}>
+                    {x} {x === 1 ? 'Guest' : 'Guests'}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={17} className="search-field-icon" aria-hidden="true" />
+            </div>
           </div>
 
           <button type="submit" className="btn-search-submit">
