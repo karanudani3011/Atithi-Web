@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAdminAuth } from '../../context/AdminAuthContext.jsx';
@@ -9,8 +9,9 @@ import '../admin.css';
 export default function AdminLogin() {
   const { login, isAuthenticated, loading } = useAdminAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(location.state?.authError || '');
   const [busy, setBusy] = useState(false);
 
   if (loading) {

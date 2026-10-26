@@ -29,20 +29,15 @@ export default function RoomDetailsPage() {
 
   // Sync activeImage whenever the room changes
   useEffect(() => {
-    setActiveImage(room?.image || '');
+    setActiveImage(room?.image_urls?.[0] || '');
     window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-  }, [room?.id, room?.image]);
+  }, [room?.id, room?.image_urls]);
 
   if (roomState.loading) return <div className="room-details-loading" aria-label="Loading room" />;
   if (roomState.error) return <section className="section"><p>{roomState.error}</p><button className="btn gold" onClick={roomState.retry}>Try again</button></section>;
   if (!room) return <Navigate to="/rooms" replace />;
 
-  const gallery =
-    Array.isArray(room.images) && room.images.length > 0
-      ? room.images
-      : Array.isArray(room.gallery) && room.gallery.length > 0
-      ? room.gallery
-      : [room.image];
+  const gallery = Array.isArray(room.image_urls) ? room.image_urls.filter(Boolean) : [];
 
   // Prev / Next room calculation
   const currentIndex = rooms.findIndex((r) => String(r.id) === String(room.id));
@@ -56,16 +51,16 @@ export default function RoomDetailsPage() {
     .slice(0, 3);
 
   const unavailable =
-    room.status === 'Maintenance' || room.status === 'Booked';
+    room.status !== 'available' || Number(room.units_left) === 0;
 
   return (
     <div className="room-details-page">
       <Banner
-        title={room.name}
+        title={room.room_name}
         breadcrumbs={[
           { label: 'Home', to: '/' },
           { label: 'Rooms', to: '/rooms' },
-          { label: room.name }
+          { label: room.room_name }
         ]}
       />
 
@@ -81,23 +76,23 @@ export default function RoomDetailsPage() {
             <Link
               to={`/room/${prevRoom.id}`}
               className="prev-next-btn"
-              title={`Previous: ${prevRoom.name}`}
+              title={`Previous: ${prevRoom.room_name}`}
             >
               <ChevronLeft size={16} />
               <span className="btn-label">
                 <small>Previous</small>
-                <b>{prevRoom.name}</b>
+                <b>{prevRoom.room_name}</b>
               </span>
             </Link>
             <span className="nav-divider">|</span>
             <Link
               to={`/room/${nextRoom.id}`}
               className="prev-next-btn"
-              title={`Next: ${nextRoom.name}`}
+              title={`Next: ${nextRoom.room_name}`}
             >
               <span className="btn-label" style={{ textAlign: 'right' }}>
                 <small>Next</small>
-                <b>{nextRoom.name}</b>
+                <b>{nextRoom.room_name}</b>
               </span>
               <ChevronRight size={16} />
             </Link>
@@ -111,13 +106,13 @@ export default function RoomDetailsPage() {
             <div className="room-main-image-wrap">
               <Img
                 src={activeImage}
-                alt={`${room.name} preview`}
+                alt={`${room.room_name} preview`}
                 className="room-detail-main-img"
               />
-              <span className="detail-badge-type">{room.type}</span>
+              <span className="detail-badge-type">{room.room_type}</span>
               {unavailable && (
                 <span className="unavailable-ribbon">
-                  {room.status === 'Maintenance' ? 'Not available' : 'Booked'}
+                  Not available
                 </span>
               )}
             </div>
@@ -133,9 +128,9 @@ export default function RoomDetailsPage() {
                   type="button"
                   className={`gallery-thumb ${activeImage === imgUrl ? 'active' : ''}`}
                   onClick={() => setActiveImage(imgUrl)}
-                  aria-label={`View photo ${idx + 1} of ${room.name}`}
+                  aria-label={`View photo ${idx + 1} of ${room.room_name}`}
                 >
-                  <Img src={imgUrl} alt={`${room.name} thumbnail ${idx + 1}`} />
+                  <Img src={imgUrl} alt={`${room.room_name} thumbnail ${idx + 1}`} />
                 </button>
               ))}
             </div>
@@ -163,12 +158,12 @@ export default function RoomDetailsPage() {
           <div className="room-info-column">
             <div className="room-header-meta">
               <div className="meta-pill-row">
-                <span className="room-type-pill">{room.type}</span>
+                <span className="room-type-pill">{room.room_type}</span>
                 <span className="room-rating-pill">
                   ★ {room.rating} <small>(Verified Guest Stay)</small>
                 </span>
               </div>
-              <h1 className="room-title-heading">{room.name}</h1>
+              <h1 className="room-title-heading">{room.room_name}</h1>
             </div>
 
             {/* Quick Specs Grid */}
@@ -177,21 +172,21 @@ export default function RoomDetailsPage() {
                 <Maximize2 size={18} className="spec-icon" />
                 <div>
                   <small>Room Size</small>
-                  <strong>{room.size} m²</strong>
+                  <strong>{room.size_sqft ? `${room.size_sqft} sq ft` : 'Not listed'}</strong>
                 </div>
               </div>
               <div className="spec-card">
                 <Users size={18} className="spec-icon" />
                 <div>
                   <small>Max Guests</small>
-                  <strong>Up to {room.guests}</strong>
+                  <strong>Up to {room.capacity}</strong>
                 </div>
               </div>
               <div className="spec-card">
                 <BedDouble size={18} className="spec-icon" />
                 <div>
                   <small>Bedding</small>
-                  <strong>{room.bed || 'King Bed'}</strong>
+                  <strong>{room.bed_info || 'King Bed'}</strong>
                 </div>
               </div>
             </div>
@@ -199,7 +194,7 @@ export default function RoomDetailsPage() {
             {/* Full Long Description */}
             <div className="room-full-desc">
               <h3 className="section-subtitle">About this Space</h3>
-              <p>{room.longDescription || room.description}</p>
+              <p>{room.description}</p>
             </div>
 
             {/* Complete Amenities List with icons/ticks */}
@@ -251,7 +246,7 @@ export default function RoomDetailsPage() {
                 <div className="sticky-price-info">
                   <span className="price-label">Price per night</span>
                   <div className="sticky-price-amount">
-                    <strong>₹{Number(room.price).toLocaleString('en-IN')}</strong>
+                    <strong>₹{Number(room.price_per_night).toLocaleString('en-IN')}</strong>
                     <span className="price-suffix">/ night</span>
                   </div>
                   <span className="gst-notice">+ 12% GST applicable at checkout</span>

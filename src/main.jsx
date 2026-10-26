@@ -8,4 +8,10 @@ import './styles/responsive.css';
 import './styles/rooms.css';
 import './styles/splash.css';
 
-createRoot(document.getElementById('root')).render(<React.StrictMode><BrowserRouter future={{v7_startTransition:true,v7_relativeSplatPath:true}}><App /></BrowserRouter></React.StrictMode>);
+createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
