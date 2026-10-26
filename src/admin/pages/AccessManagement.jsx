@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Eye, EyeOff, Plus, Shield, UserRoundX } from 'lucide-react';
+import { Eye, EyeOff, LoaderCircle, Plus, Shield, UserRoundX } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAdminAuth } from '../../context/AdminAuthContext.jsx';
 import { createTeamMember, listTeamMembers, updateTeamMember } from '../../services/admin/teamManagementService.js';
 import ConfirmDialog from '../ConfirmDialog.jsx';
+import RoleSelect from '../components/RoleSelect.jsx';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const dateLabel = (value) => value ? new Date(value).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
@@ -34,9 +35,11 @@ export default function AccessManagement() {
 
   async function submit(event) {
     event.preventDefault();
+    if (saving) return;
     const invalid = {};
     if (!form.name.trim()) invalid.name = 'Name jaruri che.';
-    if (!emailPattern.test(form.email.trim())) invalid.email = 'Valid email address lakho.';
+    if (!form.email.trim()) invalid.email = 'Email jaruri che.';
+    else if (!emailPattern.test(form.email.trim())) invalid.email = 'Valid email address lakho.';
     if (form.password.length < 8) invalid.password = 'Password minimum 8 characters nu hovu joiye.';
     setFormErrors(invalid);
     if (Object.keys(invalid).length) return;
@@ -109,11 +112,9 @@ export default function AccessManagement() {
             {formErrors.password && <small className="admin-field-error">{formErrors.password}</small>}
           </label>
           <label>Role
-            <select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>
-              <option value="staff">Staff</option><option value="admin">Admin</option>
-            </select>
+            <RoleSelect id="new-team-role" value={form.role} onChange={(role) => setForm((current) => ({ ...current, role }))}/>
           </label>
-          <button className="admin-btn admin-btn-gold" disabled={saving}><Plus size={17}/>{saving ? 'Creating…' : 'Give Access'}</button>
+          <button className="admin-btn admin-btn-gold" disabled={saving} aria-busy={saving}>{saving ? <><span className="access-submit-spinner" aria-hidden="true"/>Creating…</> : <><Plus size={17}/>Give Access</>}</button>
         </form>
       </section>
 
@@ -129,9 +130,7 @@ export default function AccessManagement() {
               return <tr key={member.id}>
                 <td><strong>{member.name || '—'}</strong>{isSelf && <small className="admin-role">You</small>}</td>
                 <td>{member.email}</td>
-                <td><select aria-label={`Role for ${member.name}`} value={member.role} disabled={isSelf || rowBusy} onChange={(event) => changeMember(member.id, { role: event.target.value }, 'Role update thai gayo.')}>
-                  <option value="admin">Admin</option><option value="staff">Staff</option>
-                </select></td>
+                <td><div className="access-role-cell"><span className={`access-role-badge ${member.role}`}>{member.role === 'admin' ? 'Admin' : 'Staff'}</span><RoleSelect compact label={`Role for ${member.name || member.email}`} value={member.role} disabled={isSelf || rowBusy} onChange={(role) => changeMember(member.id, { role }, 'Role update thai gayo.')}/>{rowBusy && <LoaderCircle size={14} className="admin-spin" aria-label="Updating role"/>}</div></td>
                 <td><button type="button" className={`admin-switch ${member.is_active ? 'on' : ''}`} role="switch" aria-checked={member.is_active} aria-label={`Set ${member.name} ${member.is_active ? 'disabled' : 'active'}`} disabled={isSelf || rowBusy} onClick={() => changeMember(member.id, { is_active: !member.is_active }, member.is_active ? 'Team access disabled.' : 'Team access active thai gayo.')}><i/></button><span className={`admin-state-badge ${member.is_active ? 'green' : 'red'}`}>{member.is_active ? 'Active' : 'Disabled'}</span></td>
                 <td>{dateLabel(member.created_at)}</td>
                 <td><button className="admin-icon-btn delete" disabled={isSelf || rowBusy || !member.is_active} title={isSelf ? 'You cannot revoke your own access' : 'Revoke team access'} aria-label={`Revoke access for ${member.name}`} onClick={() => setPendingRemove(member)}><UserRoundX size={15}/></button></td>

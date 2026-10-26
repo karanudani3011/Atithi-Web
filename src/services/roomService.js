@@ -9,11 +9,32 @@ const WRITABLE_ROOM_COLUMNS = [
 ];
 
 const friendly = (error, fallback) => new Error(error?.message || fallback);
-const fromRow = (row) => ({
-  ...row,
-  amenities: Array.isArray(row?.amenities) ? row.amenities : [],
-  image_urls: Array.isArray(row?.image_urls) ? row.image_urls.filter(Boolean) : [],
-});
+export function normalizeRoom(row) {
+  const imageUrls = Array.isArray(row?.image_urls) ? row.image_urls.filter(Boolean)
+    : Array.isArray(row?.images) ? row.images.filter(Boolean)
+      : [row?.image_url || row?.image].filter(Boolean);
+  const rawPrice = row?.price_per_night ?? row?.price;
+  const rawSize = row?.size_sqft ?? row?.size;
+  const rawCapacity = row?.capacity ?? row?.max_guests ?? row?.maxGuests;
+  const rawRating = row?.rating;
+  const price = rawPrice == null || rawPrice === '' || !Number.isFinite(Number(rawPrice)) ? null : Number(rawPrice);
+  const sizeSqFt = rawSize == null || rawSize === '' || !Number.isFinite(Number(rawSize)) ? null : Number(rawSize);
+  const guests = rawCapacity == null || rawCapacity === '' || !Number.isFinite(Number(rawCapacity)) ? null : Number(rawCapacity);
+  const rating = rawRating == null || rawRating === '' || !Number.isFinite(Number(rawRating)) ? null : Number(rawRating);
+  return {
+    ...row,
+    name: row?.room_name || row?.name || 'Atithi stay',
+    type: row?.room_type || row?.type || 'Stay',
+    price,
+    sizeSqFt,
+    size: sizeSqFt == null ? null : sizeSqFt / 10.7639,
+    guests,
+    image: imageUrls[0] || '',
+    image_urls: imageUrls,
+    amenities: Array.isArray(row?.amenities) ? row.amenities : [],
+    rating,
+  };
+}
 const toRow = (room) => Object.fromEntries(
   WRITABLE_ROOM_COLUMNS
     .filter((column) => Object.prototype.hasOwnProperty.call(room, column))
@@ -32,15 +53,14 @@ async function request(query, fallback) {
   return data;
 }
 
-export async function getRooms() {
-  const rows = await request(
-    supabase.from('rooms')
-      .select(PUBLIC_ROOM_COLUMNS)
-      .eq('is_published', true)
-      .order('sort_order', { ascending: true }),
-    'Could not load rooms.'
-  );
-  return (rows || []).map(fromRow);
+export async function getRooms({ limit, ratingFirst = false } = {}) {
+  let query = supabase.from('rooms').select(PUBLIC_ROOM_COLUMNS).eq('is_published', true);
+  query = ratingFirst
+    ? query.order('rating', { ascending: false, nullsFirst: false }).order('sort_order', { ascending: true })
+    : query.order('sort_order', { ascending: true });
+  if (Number.isInteger(limit) && limit > 0) query = query.limit(limit);
+  const rows = await request(query, 'Could not load rooms.');
+  return (rows || []).map(normalizeRoom);
 }
 
 export async function getRoomById(id) {
@@ -53,7 +73,7 @@ export async function getRoomById(id) {
       .maybeSingle(),
     'Could not load this room.'
   );
-  return row ? fromRow(row) : null;
+  return row ? normalizeRoom(row) : null;
 }
 
 export async function addRoom(room) {
@@ -61,7 +81,7 @@ export async function addRoom(room) {
     supabase.from('rooms').insert(toRow(room)).select('*').single(),
     'Could not add this room.'
   );
-  return fromRow(row);
+  return normalizeRoom(row);
 }
 
 export async function updateRoom(id, changes) {
@@ -69,7 +89,7 @@ export async function updateRoom(id, changes) {
     supabase.from('rooms').update(toRow(changes)).eq('id', id).select('*').single(),
     'Could not update this room.'
   );
-  return fromRow(row);
+  return normalizeRoom(row);
 }
 
 export async function deleteRoom(id) {

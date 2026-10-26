@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ChevronDown, RotateCcw, Search, Minus, Plus } from 'lucide-react';
+import { ChevronDown, RotateCcw, Search } from 'lucide-react';
 import PriceRangeSlider from '../components/PriceRangeSlider.jsx';
+import DateField from '../components/common/DateField.jsx';
+import GuestStepper from '../components/common/GuestStepper.jsx';
+import { localDateString, nextDate } from '../components/common/dateOnly.js';
 import Reveal from '../components/Reveal.jsx';
 import RoomCard from '../components/RoomCard.jsx';
 import useRooms from '../hooks/useRooms.js';
@@ -10,8 +13,7 @@ import { filterRooms, hasRoomPopularity } from '../lib/roomFiltering.js';
 import { DEFAULT_ROOM_FILTERS, ROOM_FILTER_TYPES, readRoomFilters, writeRoomFilters } from '../lib/roomFilterParams.js';
 
 const categories = ['All', 'Deluxe', 'Suite', 'Family', 'Villa'];
-const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-const nextDay = date => { const [year, month, day] = date.split('-').map(Number); return new Date(Date.UTC(year, month - 1, day + 1)).toISOString().slice(0, 10); };
+const today = localDateString();
 const defaults = DEFAULT_ROOM_FILTERS;
 
 export default function Rooms() {
@@ -44,6 +46,7 @@ export default function Rooms() {
 
   const update = (key, value) => {
     const next = { ...filters, [key]: String(value) };
+    if (key === 'checkIn' && next.checkOut && next.checkOut <= String(value)) next.checkOut = value ? nextDate(String(value)) : '';
     setFilters(next);
     window.clearTimeout(priceFilterTimer.current);
     setSearchParams(writeRoomFilters(next), { replace: true });
@@ -77,10 +80,10 @@ export default function Rooms() {
       <button className="filters-toggle" type="button" aria-expanded={mobileOpen} onClick={() => setMobileOpen(open => !open)}><ChevronDown size={17}/> Filters</button>
       <div className={`rooms-filter-card${mobileOpen ? ' is-open' : ''}`}>
         <div className="rooms-filter-grid">
-          <label className="room-filter-field">Check-in<input type="date" min={today} value={filters.checkIn} onChange={event => update('checkIn', event.target.value)} aria-invalid={Boolean(dateError)} /></label>
-          <label className="room-filter-field">Check-out<input type="date" min={filters.checkIn && filters.checkIn >= today ? nextDay(filters.checkIn) : today} value={filters.checkOut} onChange={event => update('checkOut', event.target.value)} aria-invalid={Boolean(dateError)} /></label>
-          <div className="room-filter-field"><span id="adults-label">Adults</span><div className="guest-stepper"><button type="button" aria-label="Remove one adult" disabled={Number(filters.adults) <= 1} onClick={() => update('adults', Math.max(1, Number(filters.adults) - 1))}><Minus size={16}/></button><output aria-labelledby="adults-label">{filters.adults}</output><button type="button" aria-label="Add one adult" disabled={Number(filters.adults) >= 6} onClick={() => update('adults', Math.min(6, Number(filters.adults) + 1))}><Plus size={16}/></button></div></div>
-          <div className="room-filter-field"><span id="children-label">Children</span><div className="guest-stepper"><button type="button" aria-label="Remove one child" disabled={Number(filters.children) <= 0} onClick={() => update('children', Math.max(0, Number(filters.children) - 1))}><Minus size={16}/></button><output aria-labelledby="children-label">{filters.children}</output><button type="button" aria-label="Add one child" disabled={Number(filters.children) >= 4} onClick={() => update('children', Math.min(4, Number(filters.children) + 1))}><Plus size={16}/></button></div></div>
+          <DateField label="Check-in" id="rooms-check-in" variant="page" min={today} value={filters.checkIn} onChange={value => update('checkIn', value)} />
+          <DateField label="Check-out" id="rooms-check-out" variant="page" min={filters.checkIn && filters.checkIn >= today ? nextDate(filters.checkIn) : today} value={filters.checkOut} onChange={value => update('checkOut', value)} />
+          <GuestStepper id="rooms-adults" label="Adults" value={Number(filters.adults)} min={1} max={6} variant="page" onChange={value => update('adults', value)} />
+          <GuestStepper id="rooms-children" label="Children" value={Number(filters.children)} min={0} max={4} variant="page" onChange={value => update('children', value)} />
           <label className="room-filter-field">Room type<select value={filters.type} onChange={event => changeType(event.target.value)}>{ROOM_FILTER_TYPES.map(type => <option key={type}>{type}</option>)}</select></label>
           <div className="room-filter-field price-range"><span>Price per night</span><PriceRangeSlider value={priceDraft} onChange={onPrice}/></div>
           <label className="room-filter-field sort-field">Sort by<select value={filters.sort} onChange={event => update('sort', event.target.value)}><option value="price-asc">Price low to high</option><option value="price-desc">Price high to low</option><option value="rating">Rating</option><option value="capacity">Capacity</option>{hasPopularity && <option value="popularity">Popularity</option>}</select></label>

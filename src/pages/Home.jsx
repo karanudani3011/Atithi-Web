@@ -12,11 +12,15 @@ import {
   Car,
   Wifi,
   Quote,
+  BedDouble,
 } from 'lucide-react';
 import PalaceHero from '../components/PalaceHero.jsx';
 import Reveal from '../components/Reveal.jsx';
 import Counter from '../components/Counter.jsx';
 import Img from '../components/Img.jsx';
+import DateField from '../components/common/DateField.jsx';
+import GuestStepper from '../components/common/GuestStepper.jsx';
+import { localDateString, nextDate } from '../components/common/dateOnly.js';
 import useRooms from '../hooks/useRooms.js';
 import { testimonials } from '../data/testimonials.js';
 
@@ -31,9 +35,11 @@ const services = [
 
 export default function Home() {
   const nav = useNavigate();
-  const roomState = useRooms();
+  const roomState = useRooms({ limit: 3, ratingFirst: true });
   const rooms = roomState.rooms;
   const [review, setReview] = useState(0);
+  const [search, setSearch] = useState({ checkIn: '', checkOut: '', adults: 1, children: 0 });
+  const [dateError, setDateError] = useState('');
   const touchStart = useRef(null);
 
   useEffect(() => {
@@ -66,11 +72,14 @@ export default function Home() {
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
+            const checkin = f.get('in');
+            const checkout = f.get('out');
+            const guests = f.get('guests') || '2';
             nav('/booking', {
               state: {
-                checkin: f.get('in'),
-                checkout: f.get('out'),
-                guests: f.get('guests'),
+                checkin,
+                checkout,
+                guests,
               },
             });
           }}
@@ -232,21 +241,22 @@ export default function Home() {
         </div>
 
         {roomState.loading ? (
-          <div className="room-grid">
+          <div className="room-grid featured-room-grid">
             {[1, 2, 3].map((x) => (
               <div className="room-card room-skeleton" key={x} />
             ))}
           </div>
         ) : roomState.error ? (
           <div className="empty-state">
-            <p>{roomState.error}</p>
+            <h3>Rooms load na thaya</h3>
+            <p>Please try again.</p>
             <button className="btn gold" onClick={roomState.retry}>
               Try again
             </button>
           </div>
         ) : rooms.length ? (
-          <div className="room-grid">
-            {rooms.slice(0, 3).map((r, i) => (
+          <div className="room-grid featured-room-grid">
+            {rooms.map((r, i) => (
               <Reveal delay={i * 0.08} key={r.id}>
                 <RoomTeaser room={r} />
               </Reveal>
@@ -327,40 +337,31 @@ export default function Home() {
 }
 
 function RoomTeaser({ room }) {
-  const unavailable = room.status === 'Maintenance' || room.status === 'Booked';
+  const [imageFailed, setImageFailed] = useState(false);
+  const price = room.price;
+  const formattedPrice = Number.isFinite(price) && price >= 0
+    ? `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(price)}`
+    : 'Price on request';
+  const size = Number.isFinite(room.size) ? new Intl.NumberFormat('en-IN', { maximumFractionDigits: 1 }).format(room.size) : null;
   return (
-    <article className="room-card">
+    <article className="room-card featured-room-card">
       <div className="room-image">
-        <Img src={room.image} alt={room.name} />
+        <Link to={`/room/${room.id}`} className="featured-room-image-link" aria-label={`Discover ${room.name}`}>
+          {room.image && !imageFailed ? <img src={room.image} alt={room.name} loading="lazy" onError={() => setImageFailed(true)} /> : <div className="featured-room-placeholder" role="img" aria-label={`${room.name} photo unavailable`}><BedDouble size={38}/><span>Atithi Stay</span></div>}
+        </Link>
         <span className="room-type">{room.type}</span>
-        {unavailable && (
-          <span className="unavailable-ribbon">
-            {room.status === 'Maintenance' ? 'Not available' : 'Booked'}
-          </span>
-        )}
+        {Number.isFinite(room.rating) && <span className="rating">★ {room.rating.toFixed(1)}</span>}
       </div>
       <div className="room-body">
         <div className="room-title">
-          <h3>{room.name}</h3>
-          <span>★ {room.rating}</span>
+          <h3><Link to={`/room/${room.id}`} className="room-title-link">{room.name}</Link></h3>
         </div>
-        <p>
-          {room.size} m² <span>·</span> Up to {room.guests} guests
-        </p>
+        <p className="featured-room-meta">{size ? `${size} m²` : 'Size not listed'} <span>·</span> Up to {room.guests ?? '—'} guests</p>
         <div className="room-bottom">
           <strong>
-            ₹{Number(room.price).toLocaleString('en-IN')}{' '}
-            <small>/ night</small>
+            {formattedPrice} {Number.isFinite(price) && <small>/ night</small>}
           </strong>
-          {unavailable ? (
-            <span className="unavailable-text">
-              {room.status === 'Maintenance' ? 'Not available' : 'Booked'}
-            </span>
-          ) : (
-            <Link to="/rooms">
-              Discover <ArrowRight size={15} />
-            </Link>
-          )}
+          <Link to={`/room/${room.id}`} className="featured-room-discover">Discover <ArrowRight size={15} /></Link>
         </div>
       </div>
     </article>

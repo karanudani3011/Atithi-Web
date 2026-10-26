@@ -1,4 +1,5 @@
 import { adminSupabase as db, ensureAdminSupabase } from '../../lib/adminSupabase.js';
+import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from '@supabase/supabase-js';
 
 const explain = (error, fallback) => {
   const message = error?.message || '';
@@ -20,9 +21,23 @@ export async function createTeamMember(payload) {
   ensureAdminSupabase();
   const { data, error } = await db.functions.invoke('create-team-member', { body: payload });
   if (error) {
-    let detail;
-    try { detail = await error.context?.json(); } catch { /* Use the friendly fallback below. */ }
-    throw new Error(detail?.error || 'Access create na thayu. Please try again.');
+    let status = error.context?.status;
+    let body;
+    if (error instanceof FunctionsHttpError) {
+      try { body = await error.context.json(); } catch { body = null; }
+      status = error.context.status;
+    }
+    if (import.meta.env.DEV) console.error('[create-team-member] request failed', { error, status, responseBody: body });
+    if (error instanceof FunctionsFetchError) {
+      throw new Error('Edge Function reachable nathi. Deploy thayu che ke nahi check karo.');
+    }
+    if (error instanceof FunctionsRelayError) {
+      throw new Error('Supabase Edge Function relay error. Function deploy ane project URL check karo.');
+    }
+    if (error instanceof FunctionsHttpError) {
+      throw new Error(body?.error || body?.message || `Access create na thayu (HTTP ${status || 'error'}).`);
+    }
+    throw new Error(body?.error || body?.message || error.message || 'Access create na thayu. Please try again.');
   }
   if (data?.error) throw new Error(data.error);
   return data?.data;
