@@ -21,7 +21,7 @@ export function AdminAuthProvider({ children }) {
       const profile = await getAdminProfile(nextSession.user.id);
       if (!profile) {
         setUser(null);
-        setAuthError('Access denied. This account is not an Atithi administrator.');
+        setAuthError('Access denied: account active nathi athva team profile nathi. Please admin sathe contact karo.');
         try { await signOutAdmin(); } catch { /* Keep the access-denied message visible. */ }
         return;
       }
@@ -66,7 +66,7 @@ export function AdminAuthProvider({ children }) {
   }, []);
 
   const value = useMemo(() => ({ user, session, authError, loading, login, logout,
-    isAuthenticated: Boolean(session?.user && user), isSuperAdmin: user?.role === 'super_admin' }),
+    isAuthenticated: Boolean(session?.user && user), isSuperAdmin: user?.role === 'admin' }),
   [user, session, authError, loading, login, logout]);
   return <AdminAuthContext.Provider value={value}>{children}</AdminAuthContext.Provider>;
 }
@@ -76,4 +76,6 @@ export function useAdminAuth() {
   if (!value) throw new Error('useAdminAuth must be inside AdminAuthProvider.');
   return value;
 }
+
+
 

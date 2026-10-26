@@ -1,6 +1,30 @@
-import { adminSupabase as db, ensureAdminSupabase, friendlyAdminError as friendly } from '../../lib/adminSupabase.js';
-async function edge(name, body) { const { data, error } = await db.functions.invoke(name, { body }); if (error) { let value; try { value = await error.context?.json(); } catch {} throw new Error(value?.error || error.message); } if (data?.error) throw new Error(data.error); return data; }
-export async function getAdmins() { ensureAdminSupabase(); const { data,error }=await db.from('admin_profiles').select('id,name,email,role,created_at').order('created_at',{ascending:true});if(error)throw friendly(error,'Could not load admin users.');return data||[]; }
-export async function createAdminUser(payload) { ensureAdminSupabase(); return edge('create-admin',payload); }
-export async function updateAdminUser(id,payload) { ensureAdminSupabase(); return edge('update-admin',{id,...payload}); }
-export async function revokeAdminUser(id) { ensureAdminSupabase(); return edge('delete-admin',{id}); }
+import { adminSupabase as db, ensureAdminSupabase } from '../../lib/adminSupabase.js';
+const baseUrl = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+async function request(path, { method = 'GET', body } = {}) {
+  ensureAdminSupabase();
+  const { data: { session } } = await db.auth.getSession();
+  if (!session?.access_token) throw new Error('Your admin session has expired. Please sign in again.');
+  const response = await fetch(`${baseUrl}/functions/v1/${path}`, {
+    method,
+    headers: { apikey: anonKey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  let result;
+  try { result = await response.json(); } catch { result = {}; }
+  if (!response.ok) throw new Error(result?.error || 'Could not complete the request. Please try again.');
+  return result;
+}
+
+export async function listUsers({ search = '', page = 1 } = {}) {
+  const query = new URLSearchParams({ search, page: String(page) });
+  return request(`admin-users?${query}`);
+}
+export async function setUserActive(id, is_active) {
+  return request(`admin-users/${encodeURIComponent(id)}`, { method: 'PATCH', body: { is_active } });
+}
+export async function listAccessHolders() { return request('admin-access'); }
+export async function createAccessHolder(payload) { return request('admin-access', { method: 'POST', body: payload }); }
+export async function updateAccessHolder(id, payload) { return request(`admin-access/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload }); }
+export async function revokeAccess(id) { return updateAccessHolder(id, { is_active: false }); }

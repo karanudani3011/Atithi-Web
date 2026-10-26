@@ -1,4 +1,11 @@
-import { Navigate } from 'react-router-dom';import { useAdminAuth } from '../context/AdminAuthContext.jsx';
-export function AdminRouteLoader(){return <div className="admin-loading" role="status">Atithi Admin</div>}
-export default function ProtectedRoute({children}){const {user,loading}=useAdminAuth();if(loading)return <AdminRouteLoader/>;return user?children:<Navigate to="/admin/login" replace/>}
-export function SuperAdminRoute({children}){const {user,loading}=useAdminAuth();if(loading)return <AdminRouteLoader/>;if(!user)return <Navigate to="/admin/login" replace/>;return user.role==='super_admin'?children:<Navigate to="/admin/dashboard" replace/>}
+import { Navigate } from 'react-router-dom';
+import useRole from '../hooks/useRole.js';
+export function AdminRouteLoader() { return <div className="admin-loading" role="status">Checking team access…</div>; }
+export default function ProtectedRoute({ children, allowedRoles = ['admin', 'staff'] }) {
+  const { role, loading } = useRole();
+  if (loading) return <AdminRouteLoader />;
+  if (role === 'none') return <Navigate to="/admin/login" replace />;
+  if (!allowedRoles.includes(role)) return <Navigate to="/admin/rooms" replace />;
+  return children;
+}
+export function AdminOnlyRoute({ children }) { return <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>; }

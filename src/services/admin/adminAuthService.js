@@ -1,33 +1,43 @@
-import { adminSupabase as db, ensureAdminSupabase, friendlyAdminError as friendly } from '../../lib/adminSupabase.js';
-async function invoke(name, body) { const { data, error } = await db.functions.invoke(name, { body }); if (error) { let detail; try { detail = await error.context?.json(); } catch {} throw new Error(detail?.error || error.message || 'The admin request failed.'); } if (data?.error) throw new Error(data.error); return data; }
+import { adminSupabase as db, ensureAdminSupabase } from '../../lib/adminSupabase.js';
+
 export async function signInAdmin(id, password) {
   ensureAdminSupabase();
-  const entered = String(id || '').trim();
-  const email = entered.includes('@') ? entered : entered.toLowerCase() === 'admin' ? 'admin@atithi.com' : entered;
+  const email = String(id || '').trim().toLowerCase();
   const { data, error } = await db.auth.signInWithPassword({ email, password });
-  if (error) throw new Error(/invalid login credentials/i.test(error.message) ? 'The ID or password you entered is incorrect.' : friendly(error, 'Could not sign in.'));
-
-  const { data: profile, error: profileError } = await db
-    .from('admin_profiles')
-    .select('id,name,email,role,created_at')
-    .eq('id', data.user.id)
-    .maybeSingle();
-
-  if (profileError) {
-    await db.auth.signOut();
-    throw friendly(profileError, 'Could not verify the admin profile.');
+  if (error) {
+    try { await db.auth.signOut(); } catch { /* Clear any stale session after a failed login. */ }
+    throw new Error('Email/password check karo ane fari try karo.');
   }
-  if (!profile) {
-    await db.auth.signOut();
-    throw new Error('Access denied. This account is not an Atithi administrator.');
-  }
-  return { user: { id: profile.id, name: profile.name, email: profile.email, role: profile.role }, session: data.session };
+
+  const deny = async () => {
+    try { await db.auth.signOut(); } catch { /* Keep the access-denied state visible. */ }
+    throw new Error('Access denied: aa active admin/staff account nathi.');
+  };
+
+  let result;
+  try {
+    result = await db.from('admin_profiles').select('id,name,email,role,is_active')
+      .eq('id', data.user.id).maybeSingle();
+  } catch { return deny(); }
+  if (result?.error || !['admin', 'staff'].includes(result?.data?.role) || result?.data?.is_active !== true) return deny();
+  return {
+    user: { id: result.data.id, name: result.data.name, email: result.data.email, role: result.data.role },
+    session: data.session,
+  };
 }
-export async function getAdminProfile(id) { ensureAdminSupabase(); const { data, error } = await db.from('admin_profiles').select('id,name,email,role,created_at').eq('id', id).maybeSingle(); if (error) throw friendly(error, 'Could not verify the admin profile.'); return data; }
-export async function getAdminSession() { ensureAdminSupabase(); const { data, error } = await db.auth.getSession(); if (error) throw friendly(error, 'Could not restore the admin session.'); return data.session; }
+
+export async function getAdminProfile(id) {
+  ensureAdminSupabase();
+  const { data, error } = await db.from('admin_profiles').select('id,name,email,role,is_active').eq('id', id).maybeSingle();
+  if (error) return null;
+  return ['admin', 'staff'].includes(data?.role) && data?.is_active === true ? data : null;
+}
+export async function getAdminSession() {
+  ensureAdminSupabase();
+  const { data, error } = await db.auth.getSession();
+  if (error) throw new Error('Session restore na thayu. Please sign in again.');
+  return data.session;
+}
 export function listenAdminAuth(callback) { return db.auth.onAuthStateChange(callback); }
-export async function signOutAdmin() { ensureAdminSupabase(); const { error } = await db.auth.signOut(); if (error) throw friendly(error, 'Could not sign out.'); }
-export async function listAdmins() { ensureAdminSupabase(); const { data, error } = await db.from('admin_profiles').select('id,name,email,role,created_at').order('created_at', { ascending: true }); if (error) throw friendly(error, 'Could not load admin users.'); return data || []; }
-export async function createAdmin(payload) { ensureAdminSupabase(); return invoke('create-admin', payload); }
-export async function updateAdmin(id, payload) { ensureAdminSupabase(); return invoke('update-admin', { id, ...payload }); }
-export async function revokeAdmin(id) { ensureAdminSupabase(); return invoke('delete-admin', { id }); }
+export async function signOutAdmin() { ensureAdminSupabase(); await db.auth.signOut(); }
+

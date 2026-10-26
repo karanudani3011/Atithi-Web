@@ -7,7 +7,7 @@ import Logo from '../../components/Logo.jsx';
 import '../admin.css';
 
 export default function AdminLogin() {
-  const { login, isAuthenticated, loading } = useAdminAuth();
+  const { login, user, isAuthenticated, loading } = useAdminAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
@@ -19,7 +19,7 @@ export default function AdminLogin() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to={user?.role === 'staff' ? '/admin/rooms' : '/admin/dashboard'} replace />;
   }
 
   async function handleSubmit(event) {
@@ -29,8 +29,8 @@ export default function AdminLogin() {
 
     const form = new FormData(event.currentTarget);
     try {
-      await login(form.get('id'), form.get('password'));
-      navigate('/admin/dashboard', { replace: true });
+      const signedInUser = await login(form.get('id'), form.get('password'));
+      navigate(signedInUser?.role === 'staff' ? '/admin/rooms' : '/admin/dashboard', { replace: true });
     } catch (failure) {
       setError(failure.message);
       toast.error(failure.message);
@@ -99,3 +99,4 @@ export default function AdminLogin() {
     </main>
   );
 }
+
