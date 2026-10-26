@@ -1,10 +1,74 @@
-import { Suspense,lazy,useEffect } from 'react';import { AnimatePresence,motion } from 'framer-motion';import { Navigate,Route,Routes,useLocation } from 'react-router-dom';import Header from './components/Header.jsx';import Footer from './components/Footer.jsx';import { ScrollTools } from './components/ScrollTools.jsx';import ProtectedRoute,{SuperAdminRoute,AdminRouteLoader} from './admin/ProtectedRoute.jsx';import AdminLayout from './admin/AdminLayout.jsx';import AdminErrorBoundary from './admin/AdminErrorBoundary.jsx';import {useAdminAuth} from './context/AdminAuthContext.jsx';
+import { Suspense, lazy, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import Header from './components/Header.jsx';
+import Footer from './components/Footer.jsx';
+import { ScrollTools } from './components/ScrollTools.jsx';
+import AdminProtectedRoute, { AdminRouteLoader, SuperAdminRoute } from './admin/AdminProtectedRoute.jsx';
+import AdminLayout from './admin/AdminLayout.jsx';
+import AdminErrorBoundary from './admin/AdminErrorBoundary.jsx';
+import { useAdminAuth } from './context/AdminAuthContext.jsx';
 const Home=lazy(()=>import('./pages/Home.jsx')),Rooms=lazy(()=>import('./pages/Rooms.jsx')),RoomDetailsPage=lazy(()=>import('./pages/RoomDetailsPage.jsx')),Booking=lazy(()=>import('./pages/Booking.jsx')),About=lazy(()=>import('./pages/About.jsx')),Login=lazy(()=>import('./pages/Login.jsx')),Contact=lazy(()=>import('./pages/Contact.jsx'));
 const AdminLogin=lazy(()=>import('./admin/pages/AdminLogin.jsx')),Dashboard=lazy(()=>import('./admin/pages/Dashboard.jsx')),AdminRooms=lazy(()=>import('./admin/pages/Rooms.jsx')),Bookings=lazy(()=>import('./admin/pages/Bookings.jsx')),Services=lazy(()=>import('./admin/pages/Services.jsx')),Messages=lazy(()=>import('./admin/pages/Messages.jsx')),AccessPanel=lazy(()=>import('./admin/pages/AccessPanel.jsx'));
 function Loading({admin=false}){return <div className={admin?'admin-loading':'route-loading'}>{admin?'Atithi Admin':'Atithi'}</div>}
 function ScrollToTop(){const {pathname,search}=useLocation();useEffect(()=>{window.scrollTo({top:0,left:0,behavior:'instant'})},[pathname,search]);return null}
-export function UserRoutes(){const loc=useLocation(),login=loc.pathname==='/login';return <><ScrollToTop/><Header/><AnimatePresence mode="wait"><motion.main key={loc.pathname} initial={{opacity:0,y:24}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-12}} transition={{duration:.38}}><Suspense fallback={<Loading/>}><Routes location={loc}><Route path="/" element={<Home/>}/><Route path="/home" element={<Home/>}/><Route path="/rooms" element={<Rooms/>}/><Route path="/room/:id" element={<RoomDetailsPage/>}/><Route path="/booking" element={<Booking/>}/><Route path="/booking/:roomId" element={<Booking/>}/><Route path="/about" element={<About/>}/><Route path="/login" element={<Login/>}/><Route path="/contact" element={<Contact/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Suspense></motion.main></AnimatePresence>{!login&&<Footer/>}<ScrollTools/></>}
-function AdminIndex(){const {user,loading}=useAdminAuth();return loading?<AdminRouteLoader/>:<Navigate to={user?'/admin/dashboard':'/admin/login'} replace/>}
-function AdminFallback(){const {user,loading}=useAdminAuth();return loading?<AdminRouteLoader/>:<Navigate to={user?'/admin/dashboard':'/admin/login'} replace/>}
-const protectedPage=Page=><ProtectedRoute><AdminLayout><Page/></AdminLayout></ProtectedRoute>;
-export function AdminRoutes(){return <AdminErrorBoundary><Suspense fallback={<Loading admin/>}><Routes><Route path="/admin/login" element={<AdminLogin/>}/><Route path="/admin" element={<AdminIndex/>}/><Route path="/admin/dashboard" element={protectedPage(Dashboard)}/><Route path="/admin/rooms" element={protectedPage(AdminRooms)}/><Route path="/admin/bookings" element={protectedPage(Bookings)}/><Route path="/admin/services" element={protectedPage(Services)}/><Route path="/admin/messages" element={protectedPage(Messages)}/><Route path="/admin/access" element={<SuperAdminRoute><AdminLayout><AccessPanel/></AdminLayout></SuperAdminRoute>}/><Route path="/admin/*" element={<AdminFallback/>}/></Routes></Suspense></AdminErrorBoundary>}
+export function UserRoutes() {
+  const location = useLocation();
+  const login = location.pathname === '/login';
+  return <>
+    <ScrollToTop />
+    <Header />
+    <AnimatePresence mode="wait">
+      <motion.main key={location.pathname} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} transition={{ duration: .38 }}>
+        <Suspense fallback={<Loading />}>
+          <Routes location={location}>
+            <Route path="/" element={<Home />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/rooms" element={<Rooms />} />
+            <Route path="/room/:id" element={<RoomDetailsPage />} />
+            <Route path="/booking" element={<Booking />} />
+            <Route path="/booking/:roomId" element={<Booking />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      </motion.main>
+    </AnimatePresence>
+    {!login && <Footer />}
+    <ScrollTools />
+  </>;
+}
+
+function AdminIndex() {
+  return <Navigate to="/admin/dashboard" replace />;
+}
+
+function AdminFallback() {
+  const { user, loading, authError } = useAdminAuth();
+  if (loading) return <AdminRouteLoader />;
+  return <Navigate to={user ? '/admin/dashboard' : '/admin/login'} replace state={authError ? { authError } : undefined} />;
+}
+
+function ProtectedAdminPage({ Page }) {
+  return <AdminProtectedRoute><AdminLayout><Page /></AdminLayout></AdminProtectedRoute>;
+}
+
+export function AdminRoutes() {
+  return <AdminErrorBoundary>
+    <Suspense fallback={<Loading admin />}>
+      <Routes>
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminIndex />} />
+        <Route path="/admin/dashboard" element={<ProtectedAdminPage Page={Dashboard} />} />
+        <Route path="/admin/rooms" element={<ProtectedAdminPage Page={AdminRooms} />} />
+        <Route path="/admin/bookings" element={<ProtectedAdminPage Page={Bookings} />} />
+        <Route path="/admin/services" element={<ProtectedAdminPage Page={Services} />} />
+        <Route path="/admin/messages" element={<ProtectedAdminPage Page={Messages} />} />
+        <Route path="/admin/access" element={<SuperAdminRoute><AdminLayout><AccessPanel /></AdminLayout></SuperAdminRoute>} />
+        <Route path="/admin/*" element={<AdminFallback />} />
+      </Routes>
+    </Suspense>
+  </AdminErrorBoundary>;
+}
