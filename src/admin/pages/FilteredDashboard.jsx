@@ -58,7 +58,7 @@ export default function FilteredDashboard() {
       setRangeError(true);
       if (error?.status === 401 || error?.status === 403) {
         await logout().catch(() => {});
-        navigate('/admin/login', { replace: true, state: { authError: 'Your session expired. Please sign in again.' } });
+        navigate('/login', { replace: true, state: { authError: 'Your session expired. Please sign in again.' } });
       }
     } finally {
       if (currentRequest === requestId.current) setLoading(false);
@@ -76,8 +76,7 @@ export default function FilteredDashboard() {
   const bookingsLive = useRealtimeTable({ table: 'bookings', onChange: refresh }).liveAvailable;
   const roomsLive = useRealtimeTable({ table: 'rooms', onChange: refresh }).liveAvailable;
   const messagesLive = useRealtimeTable({ table: 'contact_messages', onChange: refresh }).liveAvailable;
-  const usersLive = useRealtimeTable({ table: 'users', onChange: refresh }).liveAvailable;
-  const realtimeUnavailable = [bookingsLive, roomsLive, messagesLive, usersLive].includes(false);
+  const realtimeUnavailable = [bookingsLive, roomsLive, messagesLive].includes(false);
   const stats = data?.stats;
   const cards = [
     { label: 'Total Rooms', value: stats?.rooms, icon: BedDouble, errorKey: 'Total rooms' },
@@ -87,7 +86,6 @@ export default function FilteredDashboard() {
     { label: 'Revenue', value: stats?.revenue, icon: IndianRupee, format: 'currency', filtered: true, subtitle: selectedRange.name },
     { label: "Today's Check-ins", value: stats?.checkins, icon: DoorOpen, errorKey: "Today's check-ins" },
     { label: 'Total Messages', value: stats?.messages, icon: MessageSquare, errorKey: 'Total messages' },
-    { label: 'Total Users', value: stats?.users, icon: Users, errorKey: 'Total users' },
   ];
   const max = Math.max(1, ...(data?.chart || []).map(item => item.value));
   const comparison = data?.comparison;
@@ -121,7 +119,7 @@ export default function FilteredDashboard() {
 
     {realtimeUnavailable && <p className="admin-live-unavailable" role="status">Live updates unavailable. Dashboard data still loads normally.</p>}
 
-    <div className={`admin-stats-grid ${cards.length > 4 ? 'five' : ''}`}>
+    <div className="admin-stats-grid">
       {cards.map((card, index) => <StatCard key={card.label} label={card.label} value={card.value} icon={card.icon}
         format={card.format} delay={index * .045} subtitle={card.subtitle} loading={Boolean(card.filtered && loading && data)}
         error={Boolean(card.filtered ? rangeError : data?.errors.includes(card.errorKey))} onRetry={refresh}/>)}
@@ -155,3 +153,4 @@ export default function FilteredDashboard() {
     </div></section>
   </div>;
 }
+

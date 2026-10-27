@@ -1,40 +1,26 @@
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { supabase } from './lib/supabaseClient.js';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import { ScrollTools } from './components/ScrollTools.jsx';
-import AdminProtectedRoute, { AdminRouteLoader, AdminOnlyRoute } from './admin/AdminProtectedRoute.jsx';
+import AdminProtectedRoute, { AdminOnlyRoute } from './admin/AdminProtectedRoute.jsx';
 import AdminLayout from './admin/AdminLayout.jsx';
 import AdminErrorBoundary from './admin/AdminErrorBoundary.jsx';
 import { useAdminAuth } from './context/AdminAuthContext.jsx';
-import useRole from './hooks/useRole.js';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import { useAuth } from './context/AuthContext.jsx';
 const Home=lazy(()=>import('./pages/Home.jsx')),Rooms=lazy(()=>import('./pages/Rooms.jsx')),RoomDetailsPage=lazy(()=>import('./pages/RoomDetailsPage.jsx')),Booking=lazy(()=>import('./pages/Booking.jsx')),MyBookings=lazy(()=>import('./pages/MyBookings.jsx')),About=lazy(()=>import('./pages/About.jsx')),Login=lazy(()=>import('./pages/Login.jsx')),Contact=lazy(()=>import('./pages/Contact.jsx'));
-const AdminLogin=lazy(()=>import('./admin/pages/AdminLogin.jsx')),Dashboard=lazy(()=>import('./admin/pages/Dashboard.jsx')),AdminRooms=lazy(()=>import('./admin/pages/Rooms.jsx')),Bookings=lazy(()=>import('./admin/pages/Bookings.jsx')),Services=lazy(()=>import('./admin/pages/Services.jsx')),Messages=lazy(()=>import('./admin/pages/Messages.jsx')),AccessManagement=lazy(()=>import('./admin/pages/AccessManagement.jsx')),AdminUsers=lazy(()=>import('./admin/pages/Users.jsx')),AdminLoginActivity=lazy(()=>import('./admin/pages/AdminLoginActivity.jsx'));
+const Dashboard=lazy(()=>import('./admin/pages/Dashboard.jsx')),AdminRooms=lazy(()=>import('./admin/pages/Rooms.jsx')),Bookings=lazy(()=>import('./admin/pages/Bookings.jsx')),Services=lazy(()=>import('./admin/pages/Services.jsx')),Messages=lazy(()=>import('./admin/pages/Messages.jsx')),AccessManagement=lazy(()=>import('./admin/pages/AccessManagement.jsx')),AdminLoginActivity=lazy(()=>import('./admin/pages/AdminLoginActivity.jsx'));
+const NewWalkInBooking=lazy(()=>import('./admin/pages/NewWalkInBooking.jsx'));
 function Loading({admin=false}){return <div className={admin?'admin-loading':'route-loading'}>{admin?'Atithi Admin':'Atithi'}</div>}
 function ScrollToTop(){const {pathname,search}=useLocation();useEffect(()=>{window.scrollTo({top:0,left:0,behavior:'instant'})},[pathname,search]);return null}
 
 function AuthenticatedUser({ children }) {
-  const location = useLocation();
-  const [user, setUser] = useState(null);
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (!active) return;
-      setUser(error ? null : data.session?.user || null);
-      setChecking(false);
-    }).catch(() => { if (active) { setUser(null); setChecking(false); } });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) { setUser(session?.user || null); setChecking(false); }
-    });
-    return () => { active = false; subscription.unsubscribe(); };
-  }, []);
-
-  if (checking) return <Loading />;
-  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
+  return <ProtectedRoute><AuthenticatedContent>{children}</AuthenticatedContent></ProtectedRoute>;
+}
+function AuthenticatedContent({ children }) {
+  const { user } = useAuth();
   return children(user);
 }
 export function UserRoutes() {
@@ -52,8 +38,8 @@ export function UserRoutes() {
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/rooms/:id" element={<RoomDetailsPage />} />
             <Route path="/room/:id" element={<RoomDetailsPage />} />
-            <Route path="/booking" element={<Booking />} />
-            <Route path="/booking/:roomId" element={<Booking />} />
+            <Route path="/booking" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
+            <Route path="/booking/:roomId" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
             <Route path="/my-bookings" element={<AuthenticatedUser>{user => <MyBookings user={user} />}</AuthenticatedUser>} />
             <Route path="/about" element={<About />} />
             <Route path="/login" element={<Login />} />
@@ -68,17 +54,11 @@ export function UserRoutes() {
   </>;
 }
 
-function AdminIndex() {
-  const { role, loading } = useRole();
-  if (loading) return <AdminRouteLoader />;
-  if (role === 'none') return <Navigate to="/admin/login" replace />;
-  return <Navigate to={role === 'staff' ? '/admin/rooms' : '/admin/dashboard'} replace />;
-}
+function AdminIndex() { return <Navigate to="/admin/dashboard" replace />; }
 
 function AdminFallback() {
-  const { user, loading, authError } = useAdminAuth();
-  if (loading) return <AdminRouteLoader />;
-  return <Navigate to={user ? (user.role === 'staff' ? '/admin/rooms' : '/admin/dashboard') : '/admin/login'} replace state={authError ? { authError } : undefined} />;
+  const { user } = useAdminAuth();
+  return <Navigate to={user ? '/admin/dashboard' : '/login'} replace />;
 }
 
 function ProtectedAdminPage({ Page, allowedRoles = ['admin', 'staff'] }) {
@@ -89,14 +69,16 @@ export function AdminRoutes() {
   return <AdminErrorBoundary>
     <Suspense fallback={<Loading admin />}>
       <Routes>
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={<AdminIndex />} />
+        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+        <Route path="/admin/users" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/users/*" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin" element={<AdminProtectedRoute><AdminIndex /></AdminProtectedRoute>} />
         <Route path="/admin/dashboard" element={<ProtectedAdminPage Page={Dashboard} allowedRoles={["admin"]} />} />
         <Route path="/admin/rooms" element={<ProtectedAdminPage Page={AdminRooms} />} />
         <Route path="/admin/bookings" element={<ProtectedAdminPage Page={Bookings} />} />
+        <Route path="/admin/bookings/new" element={<ProtectedRoute role="admin"><AdminLayout><NewWalkInBooking /></AdminLayout></ProtectedRoute>} />
         <Route path="/admin/services" element={<ProtectedAdminPage Page={Services} />} />
         <Route path="/admin/messages" element={<ProtectedAdminPage Page={Messages} />} />
-        <Route path="/admin/users" element={<ProtectedAdminPage Page={AdminUsers} allowedRoles={["admin"]} />} />
         <Route path="/admin/login-activity" element={<ProtectedAdminPage Page={AdminLoginActivity} allowedRoles={["admin"]} />} />
         <Route path="/admin/access" element={<AdminOnlyRoute><AdminLayout><AccessManagement /></AdminLayout></AdminOnlyRoute>} />
         <Route path="/admin/*" element={<AdminFallback />} />
@@ -104,6 +86,9 @@ export function AdminRoutes() {
     </Suspense>
   </AdminErrorBoundary>;
 }
+
+
+
 
 
 

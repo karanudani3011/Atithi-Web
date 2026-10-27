@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient.js';
-import { clearLoginHistoryDedupe, logLoginHistory } from '../lib/loginLog.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import './Header.css';
 
 const links = [
@@ -33,40 +32,17 @@ export default function Header() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
   const pillRef = useRef(null);
   const linkItemRefs = useRef([]);
+  const mobileMenuRef = useRef(null);
+  const burgerRef = useRef(null);
 
-  useEffect(() => {
-    let active = true;
-    const applySession = (session) => {
-      setUser(session?.user || null);
-      if (session?.user) {
-        const savedPath = sessionStorage.getItem('atithi-auth-redirect');
-        if (savedPath?.startsWith('/') && !savedPath.startsWith('//')) {
-          sessionStorage.removeItem('atithi-auth-redirect');
-          navigate(savedPath, { replace: true });
-        }
-      }
-    };
-    supabase.auth.getSession().then(({ data }) => { if (active) applySession(data.session); });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) applySession(session);
-      if (_event === 'SIGNED_IN' && session?.user) {
-        queueMicrotask(() => { if (active) void logLoginHistory(session, supabase); });
-      } else if (_event === 'SIGNED_OUT') {
-        clearLoginHistoryDedupe();
-      }
-    });
-    return () => { active = false; subscription.unsubscribe(); };
-  }, [navigate]);
-
-  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Account';
+  const userName = user?.name || user?.email?.split('@')[0] || 'Account';
 
   async function handleLogout() {
-    const { error } = await supabase.auth.signOut();
-    if (error) console.error('[auth] sign out failed', error);
-    else navigate('/');
+    try { await logout(); navigate('/'); }
+    catch (error) { console.error('[auth] sign out failed', error); }
   }
 
   const activeIndex = Math.max(0, links.findIndex(({ path }) => {
@@ -99,6 +75,23 @@ export default function Header() {
     setMenuOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOutside = event => {
+      if (!mobileMenuRef.current?.contains(event.target) && !burgerRef.current?.contains(event.target)) setMenuOpen(false);
+    };
+    const closeOnEscape = event => { if (event.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('pointerdown', closeOutside);
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('pointerdown', closeOutside);
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [menuOpen]);
+
   // Update the thin progress bar while scrolling and remove its listener on unmount.
   useEffect(() => {
     const updateProgress = () => {
@@ -129,20 +122,21 @@ export default function Header() {
       </ul>
     </nav>
 
-    {user ? <div className="header-account desktop-account"><span className="header-account-name" title={userName}>{userName}</span><button type="button" className="login" onClick={handleLogout}>Logout</button></div>
+    {user?.isLoggedIn ? <div className="header-account desktop-account">{user.role === 'admin' ? <NavLink className="header-account-name" to="/admin">Admin Panel</NavLink> : <span className="header-account-name" title={userName}>{userName}</span>}<button type="button" className="login" onClick={handleLogout}>Logout</button></div>
       : <NavLink className="login desktop-login" to="/login" aria-label="Login or register"><LoginContents /></NavLink>}
 
-    <button className={`burger${menuOpen ? ' open' : ''}`} type="button" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} aria-controls="atithi-mobile-menu" onClick={() => setMenuOpen((open) => !open)}>
+    <button ref={burgerRef} className={`burger${menuOpen ? ' open' : ''}`} type="button" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} aria-controls="atithi-mobile-menu" onClick={() => setMenuOpen((open) => !open)}>
       <i aria-hidden="true" /><i aria-hidden="true" /><i aria-hidden="true" />
     </button>
 
-    <div className={`mobile${menuOpen ? ' open' : ''}`} id="atithi-mobile-menu" aria-hidden={!menuOpen}>
+    {menuOpen && <button className="mobile-shade" type="button" aria-label="Close navigation menu" onClick={() => setMenuOpen(false)} />}
+    <nav ref={mobileMenuRef} className={`mobile${menuOpen ? ' open' : ''}`} id="atithi-mobile-menu" aria-label="Mobile navigation" aria-hidden={!menuOpen}>
       {links.map(({ label, path }) => (
         <NavLink key={path} to={path} end={path === '/' && location.pathname !== '/home'} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} className={({ isActive }) => isActive ? 'on' : undefined}>{label}</NavLink>
       ))}
-      {user ? <div className="mobile-account"><span>{userName}</span><button type="button" className="login" onClick={() => { setMenuOpen(false); handleLogout(); }}>Logout</button></div>
+      {user?.isLoggedIn ? <div className="mobile-account">{user.role === 'admin' ? <NavLink to="/admin" onClick={() => setMenuOpen(false)}>Admin Panel</NavLink> : <span>{userName}</span>}<button type="button" className="login" onClick={() => { setMenuOpen(false); handleLogout(); }}>Logout</button></div>
         : <NavLink className="login" to="/login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} aria-label="Login or register"><LoginContents /></NavLink>}
-    </div>
+    </nav>
 
     <div className="header-progress" aria-hidden="true" style={{ width: `${scrollProgress}%` }} />
   </header>;

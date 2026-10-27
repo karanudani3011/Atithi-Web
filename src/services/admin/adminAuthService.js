@@ -12,9 +12,23 @@ export async function signInAdmin(id, password) {
     throw new Error('Invalid email or password.');
   }
 
-  const deny = async (message) => {
+  if (data.user.app_metadata?.role === 'admin') {
+    return {
+      user: {
+        id: data.user.id,
+        name: data.user.user_metadata?.full_name || data.user.email,
+        email: data.user.email,
+        role: 'admin',
+      },
+      session: data.session,
+    };
+  }
+
+  const deny = async (message, code) => {
     try { await db.auth.signOut(); } catch { /* Keep the access-denied state visible. */ }
-    throw new Error(message);
+    const failure = new Error(message);
+    if (code) failure.code = code;
+    throw failure;
   };
 
   let result;
@@ -23,11 +37,11 @@ export async function signInAdmin(id, password) {
       .eq('id', data.user.id).maybeSingle();
   } catch (profileError) {
     console.error('[admin login] profile lookup failed', profileError);
-    return deny('Something went wrong. Please check your connection and try again.');
+    return deny('Could not verify your admin profile. Check admin_profiles permissions and try again.', 'admin_profile_check_failed');
   }
   if (result?.error) {
     console.error('[admin login] profile lookup failed', result.error);
-    return deny('Something went wrong. Please check your connection and try again.');
+    return deny('Could not verify your admin profile. Check admin_profiles permissions and try again.', 'admin_profile_check_failed');
   }
   if (!result?.data) return deny('You do not have access to the admin panel.');
   if (result.data.is_active !== true) return deny('Your access has been disabled. Please contact an admin.');
@@ -52,4 +66,6 @@ export async function getAdminSession() {
 }
 export function listenAdminAuth(callback) { return db.auth.onAuthStateChange(callback); }
 export async function signOutAdmin() { ensureAdminSupabase(); await db.auth.signOut(); }
+
+
 

@@ -13,7 +13,6 @@ export async function loadDashboard(range = 'today', now = new Date()) {
     () => db.from('rooms').select('id', { count: 'exact', head: true }).eq('is_published', true),
     () => db.from('bookings').select('id', { count: 'exact', head: true }).eq('check_in', today),
     () => db.from('contact_messages').select('id', { count: 'exact', head: true }),
-    () => db.from('users').select('id', { count: 'exact', head: true }),
     () => {
       let query = db.from('bookings').select('*, rooms(room_name)').order('created_at', { ascending: false }).limit(5);
       if (from) query = query.gte('created_at', from);
@@ -35,10 +34,9 @@ export async function loadDashboard(range = 'today', now = new Date()) {
   const countAt = (index, label) => responseAt(index, label)?.count ?? (errors.includes(label) ? null : 0);
   const checkins = responseAt(2, "Today's check-ins");
   const messages = responseAt(3, 'Total messages');
-  const users = responseAt(4, 'Total users');
-  const recentResult = responseAt(5, 'Recent bookings');
-  const monthsResult = responseAt(6, 'Revenue chart');
-  const statsResult = responseAt(7, 'Booking stats');
+  const recentResult = responseAt(4, 'Recent bookings');
+  const monthsResult = responseAt(5, 'Revenue chart');
+  const statsResult = responseAt(6, 'Booking stats');
   const rangeError = errors.includes('Recent bookings') || errors.includes('Booking stats');
   const monthlyRows = monthsResult?.data || [];
   const chart = Array.from({ length: 6 }, (_, index) => {
@@ -64,7 +62,6 @@ export async function loadDashboard(range = 'today', now = new Date()) {
       revenue: Number(statsResult.data.revenue || 0),
       checkins: checkins?.count ?? (errors.includes("Today's check-ins") ? null : 0),
       messages: messages?.count ?? (errors.includes('Total messages') ? null : 0),
-      users: users?.count ?? (errors.includes('Total users') ? null : 0),
     },
     recent: recentResult?.data || [],
     comparison: statsResult.data.comparison || { today: 0, last_3_days: 0, last_7_days: 0, all_time: 0 },

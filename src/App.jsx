@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import Splash from './splash/Splash.jsx';
 import { AdminAuthProvider } from './context/AdminAuthContext.jsx';
+import { AuthProvider } from './context/AuthContext.jsx';
 import { AdminRoutes, UserRoutes } from './routes.jsx';
 
 export default function App() {
@@ -11,7 +12,7 @@ export default function App() {
   const isAdminPath = pathname === '/admin' || pathname.startsWith('/admin/');
 
   return (
-    <AdminAuthProvider>
+    <AuthProvider><AdminAuthProvider>
       {isAdminPath ? (
         <AdminRoutes />
       ) : ready ? (
@@ -37,6 +38,6 @@ export default function App() {
           },
         }}
       />
-    </AdminAuthProvider>
+    </AdminAuthProvider></AuthProvider>
   );
 }

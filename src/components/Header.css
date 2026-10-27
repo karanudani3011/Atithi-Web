@@ -74,3 +74,23 @@
   .atithi-header > .desktop-account { display: none; }
   .atithi-header .burger { display: block; }
 }
+
+@media (max-width: 1024px) {
+  .atithi-header { height: 68px; padding-inline: max(16px, 5vw); }
+  .atithi-header nav.desktop-nav,
+  .atithi-header>.desktop-login,
+  .atithi-header>.desktop-account { display: none; }
+  .atithi-header .burger { display: block; flex: none; min-width: 44px; min-height: 44px; }
+  .atithi-header>.mobile {
+    display: flex; flex-direction: column; align-items: stretch; gap: 0;
+    position: fixed; inset: 0 0 0 auto; width: min(88vw, 380px); height: 100vh; height: 100dvh;
+    max-height: none; overflow-y: auto; overscroll-behavior: contain;
+    padding: calc(82px + env(safe-area-inset-top)) 26px calc(24px + env(safe-area-inset-bottom));
+    background: var(--navy); transform: translateX(105%); transition: transform .32s cubic-bezier(.2,.7,.2,1);
+    box-shadow: -18px 0 50px #0005; z-index: 102;
+  }
+  .atithi-header>.mobile.open { max-height: none; transform: translateX(0); }
+  .atithi-header .mobile>a:not(.login) { min-height: 48px; display: flex; align-items: center; padding: 12px 2px; font-size: 15px; }
+  .atithi-header .mobile .login { justify-content: center; min-height: 48px; }
+  .atithi-header .mobile-shade { position: fixed; z-index: 101; inset: 0; display: block; width: 100%; height: 100%; border: 0; background: #030b19a8; }
+}

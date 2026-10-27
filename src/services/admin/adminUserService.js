@@ -17,13 +17,6 @@ async function request(path, { method = 'GET', body } = {}) {
   return result;
 }
 
-export async function listUsers({ search = '', page = 1 } = {}) {
-  const query = new URLSearchParams({ search, page: String(page) });
-  return request(`admin-users?${query}`);
-}
-export async function setUserActive(id, is_active) {
-  return request(`admin-users/${encodeURIComponent(id)}`, { method: 'PATCH', body: { is_active } });
-}
 export async function listAccessHolders() { return request('admin-access'); }
 export async function createAccessHolder(payload) { return request('admin-access', { method: 'POST', body: payload }); }
 export async function updateAccessHolder(id, payload) { return request(`admin-access/${encodeURIComponent(id)}`, { method: 'PATCH', body: payload }); }

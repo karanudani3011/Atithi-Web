@@ -1,26 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase, ensureSupabaseConfigured, isSupabaseConfigured } from './supabaseClient.js';
 
-const url = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
-const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim();
-
-export const isAdminSupabaseConfigured = url.length > 0 && anonKey.length > 0;
-export const adminSupabase = createClient(
-  url || 'https://missing.supabase.co',
-  anonKey || 'missing-anon-key',
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      storageKey: 'atithi-admin-auth',
-    },
-  }
-);
-
-export function ensureAdminSupabase() {
-  if (!isAdminSupabaseConfigured) {
-    throw new Error('Admin Supabase is not configured. Check the public Supabase URL and anon key in .env.');
-  }
-}
+// Admin queries use the same authenticated client and JWT as the shared login.
+export const adminSupabase = supabase;
+export const isAdminSupabaseConfigured = isSupabaseConfigured;
+export const ensureAdminSupabase = ensureSupabaseConfigured;
 
 export function friendlyAdminError(error, fallback = 'Something went wrong. Please try again.') {
   const message = error?.message || '';

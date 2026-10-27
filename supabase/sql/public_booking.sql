@@ -95,13 +95,13 @@ BEGIN
     property_id, room_id, firebase_uid, user_id,
     guest_name, guest_email, guest_phone, special_requests,
     check_in, check_out, adults, children, nights,
-    room_price, taxes_amount, total_amount, booking_status, payment_status
+    room_price, taxes_amount, total_amount, booking_status, payment_status, source
   ) VALUES (
     v_property_id, p_room_id, nullif(trim(p_firebase_uid), ''), p_user_id,
     trim(p_guest_name), lower(trim(p_guest_email)), p_guest_phone,
     nullif(trim(p_special_requests), ''),
     p_check_in, p_check_out, p_adults, p_children, v_nights,
-    v_room_price, v_taxes_amount, v_total_amount, 'pending', 'pending'
+    v_room_price, v_taxes_amount, v_total_amount, 'pending', 'pending', 'website'
   )
   RETURNING bookings.id, bookings.booking_ref
     INTO v_booking_id, v_booking_ref;

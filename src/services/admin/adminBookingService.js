@@ -1,15 +1,16 @@
 import { adminSupabase as db, ensureAdminSupabase, friendlyAdminError as friendly } from '../../lib/adminSupabase.js';
 
-export async function listBookings({ search = '', bookingStatus = '', paymentStatus = '', from = '', to = '', page = 0, pageSize = 20 } = {}) {
+export async function listBookings({ search = '', bookingStatus = '', paymentStatus = '', source = '', from = '', to = '', page = 0, pageSize = 20 } = {}) {
   ensureAdminSupabase();
   let query = db.from('bookings').select('*, rooms(room_name, room_type)', { count: 'exact' }).order('created_at', { ascending: false }).range(page * pageSize, (page + 1) * pageSize - 1);
   if (bookingStatus) query = query.eq('booking_status', bookingStatus);
   if (paymentStatus) query = query.eq('payment_status', paymentStatus);
+  if (source) query = query.eq('source', source);
   if (from) query = query.gte('check_in', from);
   if (to) query = query.lte('check_in', to);
   if (search) {
     const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(search);
-    query = uuid ? query.eq('id', search) : query.or(`guest_name.ilike.%${search}%,guest_phone.ilike.%${search}%,guest_email.ilike.%${search}%`);
+    query = uuid ? query.eq('id', search) : query.or(`guest_name.ilike.%${search}%,guest_phone.ilike.%${search}%,guest_email.ilike.%${search}%,source.ilike.%${search}%,external_ref.ilike.%${search}%`);
   }
   const { data, error, count } = await query;
   if (error) throw friendly(error, 'Could not load bookings.');

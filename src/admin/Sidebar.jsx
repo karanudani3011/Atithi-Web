@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, DoorOpen, CalendarCheck, Shield, LogOut, ExternalLink, X, ConciergeBell, Mail, Users, History } from 'lucide-react';
+import { LayoutDashboard, DoorOpen, CalendarCheck, Shield, LogOut, ExternalLink, X, ConciergeBell, Mail, History, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Logo from '../components/Logo.jsx';
 import { useAdminAuth } from '../context/AdminAuthContext.jsx';
@@ -20,14 +20,15 @@ export default function Sidebar({ open, onClose }) {
   const items = [
     ...(isAdmin ? [['Dashboard', '/admin/dashboard', LayoutDashboard]] : []),
     ['Bookings', '/admin/bookings', CalendarCheck],
+    ...(isAdmin ? [['New Booking', '/admin/bookings/new', Plus]] : []),
     ['Rooms', '/admin/rooms', DoorOpen],
     ['Services', '/admin/services', ConciergeBell],
     ['Messages', '/admin/messages', Mail],
-    ...(isAdmin ? [['Users', '/admin/users', Users], ['Login Activity', '/admin/login-activity', History], ['Access', '/admin/access', Shield]] : []),
+    ...(isAdmin ? [['Login Activity', '/admin/login-activity', History], ['Access', '/admin/access', Shield]] : []),
   ];
 
   async function handleLogout() {
-    try { await logout(); onClose?.(); navigate('/admin/login', { replace: true }); }
+    try { await logout(); onClose?.(); navigate('/login', { replace: true }); }
     catch { toast.error('Sign out na thayu. Please try again.'); }
   }
 
@@ -46,3 +47,4 @@ export default function Sidebar({ open, onClose }) {
     </div>
   </aside>;
 }
+
