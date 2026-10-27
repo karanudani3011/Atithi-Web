@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BedDouble, Check, ChevronLeft, ChevronRight, Clock3, Maximize2, ShieldCheck, Users, Wifi, Tv, Snowflake, Coffee, Sofa, Sparkles, RotateCw } from 'lucide-react';
 import DateField from '../components/common/DateField.jsx';
+import useRoomBookedDates from '../hooks/useRoomBookedDates.js';
 import GuestStepper from '../components/common/GuestStepper.jsx';
 import Img from '../components/Img.jsx';
 import RoomCard from '../components/RoomCard.jsx';
@@ -18,9 +19,12 @@ export default function RoomDetailsPage(){
   const [room,setRoom]=useState(null),[similar,setSimilar]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const [activeImage,setActiveImage]=useState(0),[lightbox,setLightbox]=useState(-1),[touchX,setTouchX]=useState(null),[availabilityError,setAvailabilityError]=useState(''),[availabilityLoading,setAvailabilityLoading]=useState(false),[availableSimilarIds,setAvailableSimilarIds]=useState(null);
   const [stay,setStay]=useState(()=>({checkIn:searchParams.get('checkIn')||'',checkOut:searchParams.get('checkOut')||'',adults:Math.max(1,Math.min(6,Number(searchParams.get('adults'))||1)),children:Math.max(0,Math.min(4,Number(searchParams.get('children'))||0))}));
+  const [dateMessage,setDateMessage]=useState('');
+  const {bookedDates,loading:bookedDatesLoading,loadedRoomId:bookedRoomId}=useRoomBookedDates(room?.id);
   const load=useCallback(async()=>{setLoading(true);setError('');try{const [found,all]=await Promise.all([getRoomById(id),getRooms()]);setRoom(found);setSimilar(found?all.filter(item=>String(item.id)!==String(id)&&item.room_type===found.room_type).slice(0,3):[]);setActiveImage(0);}catch(e){console.error('[room details] load failed',e);setError(e?.message||'Room details could not load. Please try again.');}finally{setLoading(false);}},[id]);
   useEffect(()=>{load();window.scrollTo({top:0,left:0,behavior:'instant'});},[load]);
   useEffect(()=>{if(!room?.id)return;let active=true;const refresh=()=>{if(!stay.checkIn||!stay.checkOut||stay.checkOut<=stay.checkIn){setAvailableSimilarIds(null);setAvailabilityError('');setAvailabilityLoading(false);return;}setAvailabilityLoading(true);setAvailabilityError('');setAvailableSimilarIds(null);getAvailableRoomIds(stay.checkIn,stay.checkOut,stay.adults,stay.children).then(ids=>active&&setAvailableSimilarIds(ids)).catch(error=>{if(active){console.error('[room details] availability failed',{message:error.message,details:error.details,hint:error.hint,code:error.code,error});setAvailabilityError('Availability could not be checked. Please retry.');}}).finally(()=>active&&setAvailabilityLoading(false));};refresh();window.addEventListener('focus',refresh);return()=>{active=false;window.removeEventListener('focus',refresh);};},[room?.id,stay.checkIn,stay.checkOut,stay.adults,stay.children]);
+  useEffect(()=>{if(!room?.id||bookedDatesLoading||bookedRoomId!==String(room.id)||!stay.checkIn)return;const invalidCheckIn=bookedDates.includes(stay.checkIn);const rangeConflict=stay.checkOut&&bookedDates.some(night=>night>=stay.checkIn&&night<stay.checkOut);if(invalidCheckIn||rangeConflict){setStay(current=>({...current,checkIn:invalidCheckIn?'':current.checkIn,checkOut:''}));setDateMessage('Aa dates ma room available nathi');}},[room?.id,bookedDatesLoading,bookedRoomId,bookedDates,stay.checkIn,stay.checkOut]);
   const gallery=useMemo(()=>room?.image_urls?.filter(Boolean)||[],[room]);
   const moveImage=useCallback((direction)=>{const count=gallery.length;if(count>1)setLightbox(index=>(index+direction+count)%count);},[gallery.length]);
   useEffect(()=>{if(lightbox<0)return;const onKey=(e)=>{if(e.key==='Escape')setLightbox(-1);if(e.key==='ArrowRight')moveImage(1);if(e.key==='ArrowLeft')moveImage(-1);};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[lightbox,moveImage]);
@@ -35,7 +39,7 @@ export default function RoomDetailsPage(){
   const unavailable=!isRoomBookable(room);
   const hasValidStay=Boolean(stay.checkIn&&stay.checkOut&&stay.checkOut>stay.checkIn);
   const unavailableForDates=unavailable||(hasValidStay&&availableSimilarIds!==null&&!availableSimilarIds.includes(String(room.id)));
-  const checkInBlocked=date=>date<today;
+  const checkInBlocked=date=>date<today||bookedDates.includes(date);
   const checkOutBlocked=date=>!stay.checkIn||date<=stay.checkIn;
   return <main className="room-details-page-v2">
     <div className="room-detail-breadcrumb"><Link to="/">Home</Link><span>/</span><Link to={backUrl}>Rooms</Link><span>/</span><b>{roomTitle}</b></div>
@@ -54,10 +58,10 @@ export default function RoomDetailsPage(){
       </div>
       <aside className="room-detail-booking">
         <span className="room-detail-eyebrow">YOUR ATITHI STAY</span><h2>Make it yours</h2><p className="room-detail-price">{formatINR(room.price)} <small>/ night</small></p><small className="room-detail-tax-note">Taxes included in the estimate below (12% GST).</small>
-        <DateField id="detail-checkin" label="Check-in" variant="page" min={today} value={stay.checkIn} isDateDisabled={checkInBlocked} onChange={checkIn=>setStay(old=>({...old,checkIn,checkOut:old.checkOut&&old.checkOut<=checkIn?'':old.checkOut}))}/>
-        <DateField id="detail-checkout" label="Check-out" variant="page" min={stay.checkIn?nextDate(stay.checkIn):nextDate(today)} value={stay.checkOut} isDateDisabled={checkOutBlocked} onChange={checkOut=>setStay(old=>({...old,checkOut}))}/>
+        <DateField id="detail-checkin" label="Check-in" variant="page" min={today} value={stay.checkIn} isDateDisabled={checkInBlocked} bookedDates={bookedDates} onChange={checkIn=>{setDateMessage('');setStay(old=>({...old,checkIn,checkOut:old.checkOut&&old.checkOut<=checkIn?'':old.checkOut}))}}/>
+        <DateField id="detail-checkout" label="Check-out" variant="page" min={stay.checkIn?nextDate(stay.checkIn):nextDate(today)} value={stay.checkOut} isDateDisabled={checkOutBlocked} bookedDates={bookedDates} isCheckout initialMonth={stay.checkIn||today} onChange={checkOut=>{setDateMessage('');setStay(old=>({...old,checkOut}))}}/>
         <div className="room-detail-guests"><GuestStepper label="Adults" value={stay.adults} min={1} max={Math.min(6,room.capacity||6)} variant="page" onChange={adults=>setStay(old=>({...old,adults,children:Math.min(old.children,Math.max(0,(room.capacity||6)-adults))}))}/><GuestStepper label="Children" value={stay.children} min={0} max={Math.min(4,Math.max(0,(room.capacity||6)-stay.adults))} variant="page" onChange={children=>setStay(old=>({...old,children}))}/></div>
-        {unavailableForDates&&<p className="room-dates-unavailable" role="alert">No room units are available for these dates.</p>}{availabilityError&&<p className="room-dates-unavailable" role="alert">{availabilityError}</p>}
+        {dateMessage&&<p className="room-dates-unavailable" role="alert">{dateMessage}</p>}{unavailableForDates&&<p className="room-dates-unavailable" role="alert">No room units are available for these dates.</p>}{availabilityError&&<p className="room-dates-unavailable" role="alert">{availabilityError}</p>}
         <div className="room-detail-live-total"><span>{nights?`${nights} night${nights===1?'':'s'} × ${formatINR(room.price)}`:'Select dates to see total'}</span>{nights>0&&<b>{formatINR(subtotal)}</b>}{nights>0&&<><span>GST (12%)</span><b>{formatINR(tax)}</b><strong>Total</strong><strong>{formatINR(total)}</strong></>}</div>
         {unavailableForDates||availabilityLoading?<button className="btn gold room-detail-book-cta" disabled>{availabilityLoading?'Checking availability…':'Currently unavailable'}</button>:<Link className="btn gold room-detail-book-cta" to={bookingUrl}>Book Now <ArrowRight size={17}/></Link>}
       </aside>

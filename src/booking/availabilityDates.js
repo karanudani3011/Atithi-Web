@@ -16,3 +16,11 @@ export function isNightRangeAvailable(checkIn, checkOut, bookedDates) {
   if (!checkIn || !checkOut || checkOut <= checkIn) return false;
   return !bookedDates.some(date => date >= checkIn && date < checkOut);
 }
+
+export function calendarMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1, 12);
+}
+
+export function shiftCalendarMonth(date, amount) {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1, 12);
+}

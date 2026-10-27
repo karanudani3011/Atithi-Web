@@ -19,9 +19,11 @@ export function AdminAuthProvider({ children }) {
     setLoading(true);
     try {
       const profile = await getAdminProfile(nextSession.user.id);
-      if (!profile) {
+      if (!profile || !['admin', 'staff'].includes(profile.role) || profile.is_active !== true) {
         setUser(null);
-        setAuthError('Access denied: account active nathi athva team profile nathi. Please admin sathe contact karo.');
+        setAuthError(profile?.is_active === false
+          ? 'Your access has been disabled. Please contact an admin.'
+          : 'You do not have access to the admin panel.');
         try { await signOutAdmin(); } catch { /* Keep the access-denied message visible. */ }
         return;
       }

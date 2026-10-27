@@ -213,7 +213,7 @@ export default function Home() {
         <div className="eyebrow">YOUR NEXT LOVELY MEMORY</div>
         <h2>Ready for an <i>unforgettable</i> stay?</h2>
         <p>We would love to welcome you.</p>
-        <Link className="btn gold" to="/booking">
+        <Link className="btn gold" to="/rooms">
           Find your stay <ArrowRight size={17} />
         </Link>
       </section>

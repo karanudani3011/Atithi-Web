@@ -4,8 +4,8 @@ import { Check, ChevronDown } from 'lucide-react';
 import './RoleSelect.css';
 
 const roles = [
-  { value: 'admin', label: 'Admin', description: 'Full access, team manage kari sake' },
-  { value: 'staff', label: 'Staff', description: 'Bookings, Rooms, Services, Messages' },
+  { value: 'admin', label: 'Admin', description: 'Full access, including team management' },
+  { value: 'staff', label: 'Staff', description: 'Access to bookings, rooms, services, and messages' },
 ];
 
 export default function RoleSelect({ value = 'staff', onChange, disabled = false, compact = false, id, label = 'Role' }) {
@@ -89,7 +89,7 @@ export default function RoleSelect({ value = 'staff', onChange, disabled = false
   return <div ref={rootRef} className={`role-select ${compact ? 'is-compact' : ''} ${disabled ? 'is-disabled' : ''}`}>
     <button ref={triggerRef} id={id} type="button" className={`role-select-trigger role-${selected.value}`}
       aria-label={compact ? `${label}: ${selected.label}` : undefined} aria-haspopup="listbox" aria-expanded={open}
-      aria-controls={open ? listboxId : undefined} disabled={disabled} title={disabled ? 'Tame potanu role badli na sako' : undefined}
+      aria-controls={open ? listboxId : undefined} disabled={disabled} title={disabled ? 'You cannot change your own role' : undefined}
       onClick={() => open ? close() : show()} onKeyDown={handleTriggerKeyDown}>
       <span className="role-select-value">{selected.label}</span><ChevronDown size={compact ? 14 : 17} aria-hidden="true"/>
     </button>

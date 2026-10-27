@@ -1,61 +1,50 @@
 import { adminSupabase as db, ensureAdminSupabase } from '../../lib/adminSupabase.js';
-import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from '@supabase/supabase-js';
 
-const explain = (error, fallback) => {
-  const message = error?.message || '';
-  if (/last active admin/i.test(message)) return new Error('Last active admin ne disable, demote ke remove nahi kari shakai.');
-  if (/duplicate key|already exists|unique/i.test(message)) return new Error('Aa email team ma pehlethi use thay che.');
-  return new Error(fallback);
-};
+const fallbackMessage = 'Something went wrong. Please check your connection and try again.';
+
+function throwRpcError(error) {
+  if (!error) return;
+  console.error('[access management] request failed', error);
+  const message = error.message || '';
+  if (/failed to fetch|network|load failed|fetch error/i.test(message)) throw new Error(fallbackMessage);
+  throw new Error(message || fallbackMessage);
+}
 
 export async function listTeamMembers() {
   ensureAdminSupabase();
   const { data, error } = await db.from('admin_profiles')
-    .select('id,name,email,role,is_active,created_at,created_by')
+    .select('id,name,email,role,is_active,created_at')
     .order('created_at', { ascending: false });
-  if (error) throw explain(error, 'Team list load na thai. Retry karo.');
+  throwRpcError(error);
   return data || [];
 }
 
 export async function createTeamMember(payload) {
   ensureAdminSupabase();
-  const { data, error } = await db.functions.invoke('create-team-member', { body: payload });
-  if (error) {
-    let status = error.context?.status;
-    let body;
-    if (error instanceof FunctionsHttpError) {
-      try { body = await error.context.json(); } catch { body = null; }
-      status = error.context.status;
-    }
-    if (import.meta.env.DEV) console.error('[create-team-member] request failed', { error, status, responseBody: body });
-    if (error instanceof FunctionsFetchError) {
-      throw new Error('Edge Function reachable nathi. Deploy thayu che ke nahi check karo.');
-    }
-    if (error instanceof FunctionsRelayError) {
-      throw new Error('Supabase Edge Function relay error. Function deploy ane project URL check karo.');
-    }
-    if (error instanceof FunctionsHttpError) {
-      throw new Error(body?.error || body?.message || `Access create na thayu (HTTP ${status || 'error'}).`);
-    }
-    throw new Error(body?.error || body?.message || error.message || 'Access create na thayu. Please try again.');
-  }
+  const { data, error } = await db.rpc('admin_create_team_member', {
+    p_name: payload.name,
+    p_email: payload.email,
+    p_password: payload.password,
+    p_role: payload.role,
+  });
+  throwRpcError(error);
   if (data?.error) throw new Error(data.error);
-  return data?.data;
+  return data;
 }
 
 export async function updateTeamMember(id, changes) {
   ensureAdminSupabase();
-  const { error } = await db.from('admin_profiles').update(changes).eq('id', id);
-  if (error) throw explain(error, 'Team member update na thayu. Please try again.');
+  const params = { p_id: id };
+  if (Object.hasOwn(changes, 'role')) params.p_role = changes.role;
+  if (Object.hasOwn(changes, 'is_active')) params.p_is_active = changes.is_active;
+  const { error } = await db.rpc('admin_update_team_member', params);
+  throwRpcError(error);
 }
 
 export async function removeTeamMember(id) {
   ensureAdminSupabase();
-  const { data, error } = await db.functions.invoke('remove-team-member', { body: { id } });
-  if (error) {
-    let detail;
-    try { detail = await error.context?.json(); } catch { /* Use the friendly fallback below. */ }
-    throw new Error(detail?.error || 'Access remove na thayu. Please try again.');
-  }
+  const { data, error } = await db.rpc('admin_remove_team_member', { p_id: id });
+  throwRpcError(error);
   if (data?.error) throw new Error(data.error);
+  return data;
 }

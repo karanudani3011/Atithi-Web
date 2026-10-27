@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
-import toast from 'react-hot-toast';
 import { useAdminAuth } from '../../context/AdminAuthContext.jsx';
 import Logo from '../../components/Logo.jsx';
 import '../admin.css';
@@ -33,7 +32,6 @@ export default function AdminLogin() {
       navigate(signedInUser?.role === 'staff' ? '/admin/rooms' : '/admin/dashboard', { replace: true });
     } catch (failure) {
       setError(failure.message);
-      toast.error(failure.message);
     } finally {
       setBusy(false);
     }

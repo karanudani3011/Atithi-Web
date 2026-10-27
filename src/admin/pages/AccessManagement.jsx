@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Eye, EyeOff, LoaderCircle, Plus, Shield, UserRoundX } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAdminAuth } from '../../context/AdminAuthContext.jsx';
-import { createTeamMember, listTeamMembers, updateTeamMember } from '../../services/admin/teamManagementService.js';
+import { createTeamMember, listTeamMembers, removeTeamMember, updateTeamMember } from '../../services/admin/teamManagementService.js';
 import ConfirmDialog from '../ConfirmDialog.jsx';
 import RoleSelect from '../components/RoleSelect.jsx';
 
@@ -26,9 +26,8 @@ export default function AccessManagement() {
     setError('');
     try { setMembers(await listTeamMembers()); }
     catch (failure) {
-      const message = failure?.message || 'Team list load na thai. Retry karo.';
+      const message = failure?.message || 'Something went wrong. Please check your connection and try again.';
       setError(message);
-      toast.error(message, { id: 'access-list-error' });
     } finally { setLoading(false); }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
@@ -37,10 +36,9 @@ export default function AccessManagement() {
     event.preventDefault();
     if (saving) return;
     const invalid = {};
-    if (!form.name.trim()) invalid.name = 'Name jaruri che.';
-    if (!form.email.trim()) invalid.email = 'Email jaruri che.';
-    else if (!emailPattern.test(form.email.trim())) invalid.email = 'Valid email address lakho.';
-    if (form.password.length < 8) invalid.password = 'Password minimum 8 characters nu hovu joiye.';
+    if (!form.name.trim()) invalid.name = 'Please enter a name.';
+    if (!emailPattern.test(form.email.trim())) invalid.email = 'Please enter a valid email address.';
+    if (form.password.length < 8) invalid.password = 'Password must be at least 8 characters long.';
     setFormErrors(invalid);
     if (Object.keys(invalid).length) return;
 
@@ -55,10 +53,10 @@ export default function AccessManagement() {
       setForm({ name: '', email: '', password: '', role: 'staff' });
       setFormErrors({});
       setShowPassword(false);
-      toast.success(`${form.role === 'admin' ? 'Admin' : 'Staff'} access created.`);
+      toast.success('Access given successfully.');
       await refresh();
     } catch (failure) {
-      toast.error(failure?.message || 'Access create na thayu. Please try again.');
+      toast.error(failure?.message || 'Something went wrong. Please check your connection and try again.');
     } finally { setSaving(false); }
   }
 
@@ -70,7 +68,7 @@ export default function AccessManagement() {
       toast.success(successMessage);
       await refresh();
     } catch (failure) {
-      toast.error(failure?.message || 'Team member update na thayu.');
+      toast.error(failure?.message || 'Something went wrong. Please check your connection and try again.');
     } finally { setBusyId(null); }
   }
 
@@ -78,23 +76,23 @@ export default function AccessManagement() {
     if (!pendingRemove || pendingRemove.id === currentUser?.id) return;
     setBusyId(pendingRemove.id);
     try {
-      await updateTeamMember(pendingRemove.id, { is_active: false });
-      toast.success('Team access revoke thai gayu.');
+      await removeTeamMember(pendingRemove.id);
+      toast.success('Access removed successfully.');
       setPendingRemove(null);
       await refresh();
     } catch (failure) {
-      toast.error(failure?.message || 'Access revoke na thayu.');
+      toast.error(failure?.message || 'Something went wrong. Please check your connection and try again.');
     } finally { setBusyId(null); }
   }
 
   return <div className="admin-page">
     <div className="admin-page-heading">
-      <div><span className="admin-eyebrow">TEAM PERMISSIONS</span><h1>Access <i>Management</i></h1><p>Admin ane staff access create ane manage karo.</p></div>
+      <div><span className="admin-eyebrow">TEAM PERMISSIONS</span><h1>Access <i>Management</i></h1><p>Create and manage admin and staff access.</p></div>
     </div>
     <div className="access-layout">
       <section className="admin-panel access-form-panel">
         <span className="access-icon"><Shield/></span><h2>Give Access</h2>
-        <p className="admin-muted">Team member ne Atithi team account create thashe.</p>
+        <p className="admin-muted">This team member will get an Atithi team account.</p>
         <form className="access-form" onSubmit={submit} noValidate>
           <label>Name
             <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Full name" autoComplete="name"/>
@@ -114,7 +112,7 @@ export default function AccessManagement() {
           <label>Role
             <RoleSelect id="new-team-role" value={form.role} onChange={(role) => setForm((current) => ({ ...current, role }))}/>
           </label>
-          <button className="admin-btn admin-btn-gold" disabled={saving} aria-busy={saving}>{saving ? <><span className="access-submit-spinner" aria-hidden="true"/>Creating…</> : <><Plus size={17}/>Give Access</>}</button>
+          <button className="admin-btn admin-btn-gold" disabled={saving} aria-busy={saving}>{saving ? <><span className="access-submit-spinner" aria-hidden="true"/>Giving access...</> : <><Plus size={17}/>Give Access</>}</button>
         </form>
       </section>
 
@@ -130,18 +128,18 @@ export default function AccessManagement() {
               return <tr key={member.id}>
                 <td><strong>{member.name || '—'}</strong>{isSelf && <small className="admin-role">You</small>}</td>
                 <td>{member.email}</td>
-                <td><div className="access-role-cell"><span className={`access-role-badge ${member.role}`}>{member.role === 'admin' ? 'Admin' : 'Staff'}</span><RoleSelect compact label={`Role for ${member.name || member.email}`} value={member.role} disabled={isSelf || rowBusy} onChange={(role) => changeMember(member.id, { role }, 'Role update thai gayo.')}/>{rowBusy && <LoaderCircle size={14} className="admin-spin" aria-label="Updating role"/>}</div></td>
-                <td><button type="button" className={`admin-switch ${member.is_active ? 'on' : ''}`} role="switch" aria-checked={member.is_active} aria-label={`Set ${member.name} ${member.is_active ? 'disabled' : 'active'}`} disabled={isSelf || rowBusy} onClick={() => changeMember(member.id, { is_active: !member.is_active }, member.is_active ? 'Team access disabled.' : 'Team access active thai gayo.')}><i/></button><span className={`admin-state-badge ${member.is_active ? 'green' : 'red'}`}>{member.is_active ? 'Active' : 'Disabled'}</span></td>
+                <td><div className="access-role-cell"><span className={`access-role-badge ${member.role}`}>{member.role === 'admin' ? 'Admin' : 'Staff'}</span><RoleSelect compact label={`Role for ${member.name || member.email}`} value={member.role} disabled={isSelf || rowBusy} onChange={(role) => changeMember(member.id, { role }, 'Role updated successfully.')}/>{rowBusy && <LoaderCircle size={14} className="admin-spin" aria-label="Updating role"/>}</div></td>
+                <td><button type="button" className={`admin-switch ${member.is_active ? 'on' : ''}`} role="switch" aria-checked={member.is_active} aria-label={`Set ${member.name} ${member.is_active ? 'inactive' : 'active'}`} disabled={isSelf || rowBusy} onClick={() => changeMember(member.id, { is_active: !member.is_active }, member.is_active ? 'Access disabled.' : 'Access enabled.')}><i/></button><span className={`admin-state-badge ${member.is_active ? 'green' : 'red'}`}>{member.is_active ? 'Active' : 'Inactive'}</span></td>
                 <td>{dateLabel(member.created_at)}</td>
-                <td><button className="admin-icon-btn delete" disabled={isSelf || rowBusy || !member.is_active} title={isSelf ? 'You cannot revoke your own access' : 'Revoke team access'} aria-label={`Revoke access for ${member.name}`} onClick={() => setPendingRemove(member)}><UserRoundX size={15}/></button></td>
+                <td><button className="admin-icon-btn delete" disabled={isSelf || rowBusy} title={isSelf ? 'You cannot remove your own access' : 'Remove access'} aria-label={`Remove access for ${member.name}`} onClick={() => setPendingRemove(member)}><UserRoundX size={15}/></button></td>
               </tr>;
             })}</tbody>
           </table></div>
-          : <div className="admin-empty small"><p>Koi team member nathi.</p></div>}
+          : <div className="admin-empty small"><p>No team members yet.</p></div>}
       </section>
     </div>
-    <ConfirmDialog open={Boolean(pendingRemove)} title="Revoke team access?" confirmText={busyId ? 'Revoking…' : 'Revoke access'} onCancel={() => setPendingRemove(null)} onConfirm={confirmRemove}>
-      {pendingRemove ? `${pendingRemove.name} sign in kari nahi shake. Admin pachi access fari active kari shake.` : ''}
+    <ConfirmDialog open={Boolean(pendingRemove)} title="Remove access?" confirmText={busyId ? 'Removing…' : 'Remove access'} onCancel={() => setPendingRemove(null)} onConfirm={confirmRemove}>
+      {pendingRemove ? `${pendingRemove.name} will no longer be able to sign in.` : ''}
     </ConfirmDialog>
   </div>;
 }
