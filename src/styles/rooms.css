@@ -814,6 +814,8 @@
 .reset-filter { min-height: 44px; display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; color: var(--muted); font-size: 11px; }
 .filter-error { margin: 12px 0 0; color: #a33a32; font-size: 12px; }
 .rooms-result-count { margin: 22px 0 18px; color: var(--muted); font-size: 13px; }
+.room-availability-hint { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+.nearby-date-option { display: inline-flex; margin: 8px 6px 0 0; }
 .filters-toggle { display: none; }
 .room-card { display: flex; flex-direction: column; }
 .room-image { aspect-ratio: 4 / 3; height: auto; }

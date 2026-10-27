@@ -1,11 +1,11 @@
 import { ensureSupabaseConfigured, isSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
 
 // `status` is included so user-side cards can correctly disable unavailable rooms.
-export const PUBLIC_ROOM_COLUMNS = 'id, room_name, room_type, description, price_per_night, capacity, amenities, image_urls, badge, bed_info, size_sqft, rating, units_left, status';
+export const PUBLIC_ROOM_COLUMNS = 'id, room_name, room_type, room_type_id, description, price_per_night, capacity, amenities, image_urls, badge, bed_info, size_sqft, rating, units_left, total_units, status, created_at';
 const WRITABLE_ROOM_COLUMNS = [
-  'property_id', 'room_name', 'room_type', 'description', 'price_per_night',
+  'property_id', 'room_name', 'room_type', 'room_type_id', 'description', 'price_per_night',
   'capacity', 'amenities', 'image_urls', 'status', 'is_published', 'badge',
-  'bed_info', 'size_sqft', 'rating', 'sort_order', 'units_left',
+  'bed_info', 'size_sqft', 'rating', 'sort_order', 'units_left', 'total_units',
 ];
 
 const friendly = (error, fallback) => new Error(error?.message || fallback);
@@ -50,7 +50,10 @@ const toRow = (room) => Object.fromEntries(
 async function request(query, fallback) {
   ensureSupabaseConfigured();
   const { data, error } = await query;
-  if (error) throw friendly(error, fallback);
+  if (error) {
+    console.error('[rooms] Supabase query failed', { message: error.message, details: error.details, hint: error.hint, code: error.code, error });
+    throw friendly(error, fallback);
+  }
   return data;
 }
 
@@ -77,11 +80,24 @@ export async function getRoomById(id) {
   return row ? normalizeRoom(row) : null;
 }
 
-export async function getAvailableRoomIds(checkIn, checkOut) {
+export async function getAvailableRoomIds(checkIn, checkOut, adults = 1, children = 0) {
+  const result = await searchRooms({ checkIn, checkOut, adults, children });
+  return result.rooms.filter(room => room.is_available).map(room => String(room.id));
+}
+
+export async function searchRooms({ checkIn = null, checkOut = null, adults = 1, children = 0, roomTypeId = null, minPrice = null, maxPrice = null, sort = 'price_asc' } = {}) {
   ensureSupabaseConfigured();
-  const { data, error } = await supabase.rpc('get_available_room_ids', { p_check_in: checkIn, p_check_out: checkOut });
-  if (error) throw friendly(error, 'Could not check room availability.');
-  return (data || []).map(row => row.room_id ?? row.id ?? row).map(String);
+  const params = { p_check_in: checkIn || null, p_check_out: checkOut || null, p_adults: Number(adults) || 1, p_children: Number(children) || 0,
+    p_room_type_id: roomTypeId || null, p_min_price: minPrice == null || minPrice === '' ? null : Number(minPrice),
+    p_max_price: maxPrice == null || maxPrice === '' ? null : Number(maxPrice), p_sort: sort || 'price_asc' };
+  const { data, error } = await supabase.rpc('get_available_rooms', params);
+  if (error) {
+    console.error('[rooms] availability RPC failed', { params, message: error.message, details: error.details, hint: error.hint, code: error.code, error });
+    throw friendly(error, 'Could not load rooms.');
+  }
+  const payload = data || {};
+  console.info('[rooms] availability results', { params, counts: payload.diagnostics || {}, returned: payload.rooms?.length || 0 });
+  return { rooms: (payload.rooms || []).map(normalizeRoom), diagnostics: payload.diagnostics || {} };
 }
 
 export async function addRoom(room) {

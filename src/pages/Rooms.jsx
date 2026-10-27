@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronDown, RotateCcw, Search } from 'lucide-react';
 import PriceRangeSlider from '../components/PriceRangeSlider.jsx';
@@ -7,103 +7,149 @@ import GuestStepper from '../components/common/GuestStepper.jsx';
 import { localDateString, nextDate } from '../components/common/dateOnly.js';
 import Reveal from '../components/Reveal.jsx';
 import RoomCard from '../components/RoomCard.jsx';
-import useRooms from '../hooks/useRooms.js';
-import { getAvailableRoomIds } from '../services/roomService.js';
-import { filterRooms, hasRoomPopularity } from '../lib/roomFiltering.js';
-import { DEFAULT_ROOM_FILTERS, ROOM_FILTER_TYPES, readRoomFilters, writeRoomFilters } from '../lib/roomFilterParams.js';
+import { searchRooms } from '../services/roomService.js';
+import { DEFAULT_ROOM_FILTERS, readRoomFilters, writeRoomFilters } from '../lib/roomFilterParams.js';
+import useRoomTypes from '../hooks/useRoomTypes.js';
 
-const categories = ['All', 'Deluxe', 'Suite', 'Family', 'Villa'];
 const today = localDateString();
-const defaults = DEFAULT_ROOM_FILTERS;
+const addDays = (date, days) => localDateString(new Date(new Date(date + 'T12:00:00').getFullYear(), new Date(date + 'T12:00:00').getMonth(), new Date(date + 'T12:00:00').getDate() + days));
+const isDateOnly = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T12:00:00`).getTime()) && new Date(`${value}T12:00:00`).toISOString().slice(0, 10) === value;
 
 export default function Rooms() {
-  const roomState = useRooms();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState(() => readRoomFilters(searchParams));
-  const [priceDraft, setPriceDraft] = useState([Number(filters.minPrice), Number(filters.maxPrice)]);
+  const { types: roomTypes, loading: typesLoading, error: typesError } = useRoomTypes({ activeOnly: true });
+  const [rooms, setRooms] = useState([]);
+  const [priceBounds, setPriceBounds] = useState([0, 10000]);
+  const [priceDraft, setPriceDraft] = useState([Number(filters.minPrice) || 0, Number(filters.maxPrice) || 10000]);
+  const [priceTouched, setPriceTouched] = useState(Boolean(filters.minPrice || filters.maxPrice));
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [availableRoomIds, setAvailableRoomIds] = useState(null);
-  const [availabilityError, setAvailabilityError] = useState('');
-  const [availabilityLoading, setAvailabilityLoading] = useState(false);
-  const [availabilityReload, setAvailabilityReload] = useState(0);
   const [nearbyLoading, setNearbyLoading] = useState(false);
-  const priceFilterTimer = useRef(null);
-  const dateError = filters.checkIn && filters.checkIn < today ? 'Check-in must be today or later.' : filters.checkOut && !filters.checkIn ? 'Choose a check-in date first.' : filters.checkOut && filters.checkIn && filters.checkOut <= filters.checkIn ? 'Check-out must be after check-in.' : '';
+  const [nearbyDates, setNearbyDates] = useState([]);
+  const [reload, setReload] = useState(0);
+  const [applyNow, setApplyNow] = useState(0);
+  const timer = useRef(null);
+  const dateError = filters.checkIn && !isDateOnly(filters.checkIn) ? 'Enter a valid check-in date.'
+    : filters.checkOut && !isDateOnly(filters.checkOut) ? 'Enter a valid check-out date.'
+      : filters.checkIn && filters.checkIn < today ? 'Check-in must be today or later.'
+    : filters.checkOut && !filters.checkIn ? 'Choose a check-in date first.'
+      : filters.checkOut && filters.checkIn && filters.checkOut <= filters.checkIn ? 'Check-out must be after check-in.' : '';
   const datesValid = Boolean(filters.checkIn && filters.checkOut && !dateError);
+  const browseMode = !filters.checkIn && !filters.checkOut;
 
-  // Keep the shareable URL as the source of truth after browser navigation.
   useEffect(() => setFilters(readRoomFilters(searchParams)), [searchParams]);
-  useEffect(() => () => window.clearTimeout(priceFilterTimer.current), []);
-  useEffect(() => setPriceDraft([Number(filters.minPrice), Number(filters.maxPrice)]), [filters.minPrice, filters.maxPrice]);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
   useEffect(() => {
-    if (!datesValid || !roomState.rooms.length) { setAvailableRoomIds(null); setAvailabilityError(''); setAvailabilityLoading(false); return; }
     let active = true;
-    const loadAvailability = () => {
-      setAvailabilityLoading(true); setAvailabilityError('');
-      getAvailableRoomIds(filters.checkIn, filters.checkOut)
-        .then(ids => { if (active) setAvailableRoomIds(ids); })
-        .catch(error => { if (active) { setAvailabilityError(error.message || 'Could not check room availability.'); setAvailableRoomIds([]); } })
-        .finally(() => { if (active) setAvailabilityLoading(false); });
+    searchRooms({ adults: 0, children: 0 }).then(({ rooms: base }) => {
+      if (!active) return;
+      const prices = base.map(room => Number(room.price_per_night)).filter(value => Number.isFinite(value) && value >= 0);
+      const low = prices.length ? Math.min(...prices) : 0;
+      const high = prices.length ? Math.max(...prices) : 10000;
+      setPriceBounds([low, high > low ? high : low + 1]);
+      if (!priceTouched) setPriceDraft([low, high > low ? high : low + 1]);
+    }).catch(failure => {
+      if (!active) return;
+      console.error('[rooms] base listing failed', failure);
+      setError('Something went wrong, please retry.');
+    });
+    return () => { active = false; };
+  }, [reload]);
+
+  const selectedType = roomTypes.find(type => type.name.toLowerCase() === String(filters.type).toLowerCase());
+  const load = useCallback(async () => {
+    if (dateError) { setError(''); setLoading(false); return; }
+    if (filters.type.toLowerCase() !== 'all' && typesLoading) return;
+    setLoading(true);
+    setError('');
+    const params = {
+      checkIn: datesValid ? filters.checkIn : null,
+      checkOut: datesValid ? filters.checkOut : null,
+      adults: Number(filters.adults),
+      children: Number(filters.children),
+      roomTypeId: filters.type.toLowerCase() === 'all' ? null : selectedType?.id || null,
+      minPrice: filters.minPrice || null,
+      maxPrice: filters.maxPrice || null,
+      sort: filters.sort.replaceAll('-', '_'),
     };
-    loadAvailability();
-    window.addEventListener('focus', loadAvailability);
-    return () => { active = false; window.removeEventListener('focus', loadAvailability); };
-  }, [datesValid, filters.checkIn, filters.checkOut, roomState.rooms, availabilityReload]);
+    try {
+      const result = await searchRooms(params);
+      setRooms(result.rooms);
+      setNearbyDates([]);
+    } catch (failure) {
+      console.error('[rooms] listing request failed', { params, message: failure.message, details: failure.details, hint: failure.hint, code: failure.code, error: failure });
+      setError('Something went wrong, please retry.');
+      setRooms([]);
+    } finally { setLoading(false); }
+  }, [dateError, datesValid, filters, selectedType?.id, typesLoading]);
+
+  useEffect(() => {
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      setSearchParams(writeRoomFilters(filters), { replace: true });
+      load();
+    }, applyNow ? 0 : 220);
+    return () => window.clearTimeout(timer.current);
+  }, [filters, load, applyNow, reload]);
 
   const update = (key, value) => {
     const next = { ...filters, [key]: String(value) };
     if (key === 'checkIn' && next.checkOut && next.checkOut <= String(value)) next.checkOut = value ? nextDate(String(value)) : '';
     setFilters(next);
-    window.clearTimeout(priceFilterTimer.current);
-    setSearchParams(writeRoomFilters(next), { replace: true });
+    setNearbyDates([]);
   };
-  const changeType = type => update('type', type);
-  const categoryIsActive = category => filters.type === category || (category === 'Deluxe' && ['Standard', 'Superior', 'Executive'].includes(filters.type)) || (category === 'Suite' && filters.type === 'Premium');
+  const changeType = value => update('type', value || 'All');
+  const categoryIsActive = category => String(filters.type).toLowerCase() === category.toLowerCase();
   const reset = () => {
-    window.clearTimeout(priceFilterTimer.current);
-    setFilters(defaults); setPriceDraft([1000, 10000]); setSearchParams(writeRoomFilters(defaults), { replace: true });
+    window.clearTimeout(timer.current);
+    setPriceTouched(false);
+    setPriceDraft(priceBounds);
+    setFilters(DEFAULT_ROOM_FILTERS);
+    setNearbyDates([]);
+    setSearchParams(writeRoomFilters(DEFAULT_ROOM_FILTERS), { replace: true });
+    setApplyNow(value => value + 1);
   };
   const onPrice = values => {
-    const nextFilters = { ...filters, minPrice: String(values[0]), maxPrice: String(values[1]) };
+    setPriceTouched(true);
     setPriceDraft(values);
-    setFilters(nextFilters);
-    window.clearTimeout(priceFilterTimer.current);
-    priceFilterTimer.current = window.setTimeout(() => setSearchParams(writeRoomFilters(nextFilters), { replace: true }), 250);
+    setFilters(current => ({ ...current, minPrice: String(values[0]), maxPrice: String(values[1]) }));
   };
-
-  const list = useMemo(() => {
-    const filtered = filterRooms(roomState.rooms, filters, { datesValid: false });
-    if (!datesValid) return filtered;
-    if (availabilityLoading || availabilityError || !availableRoomIds) return [];
-    const allowed = new Set(availableRoomIds);
-    return filtered.filter(room => allowed.has(String(room.id)));
-  }, [roomState.rooms, filters, datesValid, availableRoomIds, availabilityLoading, availabilityError]);
-
-  const suggestNearbyDates = async () => {
-    if (!filters.checkIn) { document.getElementById('rooms-check-in')?.focus(); return; }
-    setNearbyLoading(true);
-    try {
-      const base = new Date(`${filters.checkIn}T12:00:00`);
-      for (let offset = 1; offset <= 14; offset += 1) {
-        const checkIn = localDateString(new Date(base.getFullYear(), base.getMonth(), base.getDate() + offset));
-        const checkOut = nextDate(checkIn);
-        if ((await getAvailableRoomIds(checkIn, checkOut)).length) {
-          const next = { ...filters, checkIn, checkOut };
-          setFilters(next); setSearchParams(writeRoomFilters(next), { replace: true }); return;
-        }
-      }
-      setAvailabilityError('Could not find an available date in the next two weeks. Try a different range.');
-    } catch (failure) { setAvailabilityError(failure?.message || 'Could not suggest nearby dates.'); }
-    finally { setNearbyLoading(false); }
-  };
-
-  const hasPopularity = hasRoomPopularity(roomState.rooms);
   const applyBookingSearch = () => {
     if (dateError) return;
-    window.clearTimeout(priceFilterTimer.current);
-    setSearchParams(writeRoomFilters(filters), { replace: true });
     setMobileOpen(false);
+    setApplyNow(value => value + 1);
   };
+
+  async function suggestNearbyDates() {
+    if (!filters.checkIn || !filters.checkOut) return;
+    const nights = Math.round((new Date(filters.checkOut + 'T12:00:00') - new Date(filters.checkIn + 'T12:00:00')) / 86400000);
+    setNearbyLoading(true);
+    setError('');
+    const candidates = [-3, -2, -1, 1, 2, 3].map(offset => {
+      const checkIn = addDays(filters.checkIn, offset);
+      return { offset, checkIn, checkOut: addDays(checkIn, nights) };
+    }).filter(item => item.checkIn >= today);
+    try {
+      const results = await Promise.all(candidates.map(async item => {
+        const result = await searchRooms({ checkIn: item.checkIn, checkOut: item.checkOut, adults: Number(filters.adults), children: Number(filters.children),
+          roomTypeId: filters.type.toLowerCase() === 'all' ? null : selectedType?.id || null,
+          minPrice: filters.minPrice || null, maxPrice: filters.maxPrice || null, sort: filters.sort.replaceAll('-', '_') });
+        return { ...item, available: result.rooms.length > 0 };
+      }));
+      const found = results.filter(item => item.available).sort((a, b) => Math.abs(a.offset) - Math.abs(b.offset));
+      setNearbyDates(found);
+      if (!found.length) setError('No nearby dates have availability for these filters.');
+    } catch (failure) {
+      console.error('[rooms] nearby date search failed', failure);
+      setError('Something went wrong, please retry.');
+    } finally { setNearbyLoading(false); }
+  }
+
+  const typeOptions = useMemo(() => ['All', ...roomTypes.map(type => type.name)], [roomTypes]);
+  const priceValues = priceTouched ? priceDraft : priceBounds;
   return <>
     <section className="inner-banner"><div className="banner-copy"><div className="eyebrow">REST WELL, FEEL AT HOME</div><h1>Rooms & <i>Suites</i></h1><p>Spaces made for unhurried mornings and memorable nights.</p></div></section>
     <section className="section rooms-page rooms-filter-section">
@@ -114,24 +160,24 @@ export default function Rooms() {
           <DateField label="Check-out" id="rooms-check-out" variant="page" min={filters.checkIn && filters.checkIn >= today ? nextDate(filters.checkIn) : today} value={filters.checkOut} onChange={value => update('checkOut', value)} />
           <GuestStepper id="rooms-adults" label="Adults" value={Number(filters.adults)} min={1} max={6} variant="page" onChange={value => update('adults', value)} />
           <GuestStepper id="rooms-children" label="Children" value={Number(filters.children)} min={0} max={4} variant="page" onChange={value => update('children', value)} />
-          <label className="room-filter-field">Room type<select value={filters.type} onChange={event => changeType(event.target.value)}>{ROOM_FILTER_TYPES.map(type => <option key={type}>{type}</option>)}</select></label>
-          <div className="room-filter-field price-range"><span>Price per night</span><PriceRangeSlider value={priceDraft} onChange={onPrice}/></div>
-          <label className="room-filter-field sort-field">Sort by<select value={filters.sort} onChange={event => update('sort', event.target.value)}><option value="price-asc">Price low to high</option><option value="price-desc">Price high to low</option><option value="rating">Rating</option><option value="capacity">Capacity</option>{hasPopularity && <option value="popularity">Popularity</option>}</select></label>
+          <label className="room-filter-field">Room type<select value={filters.type.toLowerCase() === 'all' ? 'All' : selectedType?.name || filters.type} onChange={event => changeType(event.target.value)}>{typeOptions.map(type => <option key={type} value={type}>{type === 'All' ? 'All room types' : type}</option>)}</select></label>
+          <div className="room-filter-field price-range"><span>Price per night</span><PriceRangeSlider min={priceBounds[0]} max={priceBounds[1]} value={priceValues} onChange={onPrice}/></div>
+          <label className="room-filter-field sort-field">Sort by<select value={filters.sort} onChange={event => update('sort', event.target.value)}><option value="price-asc">Price low to high</option><option value="price-desc">Price high to low</option><option value="rating">Rating</option><option value="newest">Newest</option></select></label>
           <div className="filter-actions"><button className="btn gold" type="button" onClick={applyBookingSearch}><Search size={16}/> Search / Apply</button><button className="reset-filter" type="button" onClick={reset}><RotateCcw size={15}/> Reset</button></div>
         </div>
         {dateError && <p className="filter-error" role="alert">{dateError}</p>}
-        {availabilityError && <p className="filter-error" role="alert">{availabilityError}</p>}
+        {typesError && <p className="filter-error" role="alert">{typesError}</p>}
       </div>
       <div className="category-row" role="tablist" aria-label="Room categories">
-        {categories.map(item => <button key={item} role="tab" aria-selected={categoryIsActive(item)} className={categoryIsActive(item) ? 'filter active' : 'filter'} onClick={() => changeType(item)}>{item}</button>)}
+        {typeOptions.map(item => <button key={item} role="tab" aria-selected={categoryIsActive(item)} className={categoryIsActive(item) ? 'filter active' : 'filter'} onClick={() => changeType(item)}>{item}</button>)}
       </div>
-      <p className="rooms-result-count" aria-live="polite">{availabilityLoading ? 'Checking availability…' : datesValid ? `${list.length} ${list.length === 1 ? 'room' : 'rooms'} available for your dates` : `${list.length} ${list.length === 1 ? 'room' : 'rooms'} found`}</p>
-      {roomState.loading ? <div className="room-grid">{[1,2,3].map(item => <div className="room-card room-skeleton" key={item} aria-label="Loading room" />)}</div>
-        : roomState.error ? <div className="empty-state"><p>{roomState.error}</p><button className="btn gold" onClick={roomState.retry}>Try again</button></div>
-          : availabilityLoading ? <p className="availability-loading" role="status">Checking room availability for your dates…</p>
-          : availabilityError ? <div className="rooms-empty"><h3>Availability check failed</h3><p>{availabilityError}</p><button className="btn gold" onClick={() => setAvailabilityReload(value => value + 1)}>Retry</button></div>
-          : list.length ? <div className="room-grid">{list.map((room, i) => <Reveal key={room.id} delay={i * .06}><RoomCard room={room} bookingQuery={filters} /></Reveal>)}</div>
-            : <div className="rooms-empty"><h3>{datesValid ? 'Aa dates par koi room available nathi' : 'No rooms found'}</h3><p>{datesValid ? 'Try a nearby date or choose a different stay.' : 'Try changing your dates or filters.'}</p>{datesValid&&<button className="btn gold" type="button" disabled={nearbyLoading} onClick={suggestNearbyDates}>{nearbyLoading?'Checking nearby dates…':'Suggest nearby dates'}</button>}<button className="reset-filter" type="button" onClick={() => document.getElementById('rooms-check-in')?.focus()}>Dates badlo</button><button className="btn gold" type="button" onClick={reset}>Reset filters</button></div>}
+      {browseMode && <p className="room-availability-hint">Select dates to see live availability.</p>}
+      <p className="rooms-result-count" aria-live="polite">{dateError ? 'Please correct your dates to check availability.' : loading ? 'Loading rooms…' : datesValid ? `${rooms.length} ${rooms.length === 1 ? 'room' : 'rooms'} available for your dates` : `${rooms.length} ${rooms.length === 1 ? 'room' : 'rooms'} found`}</p>
+      {loading ? <div className="room-grid">{[1,2,3].map(item => <div className="room-card room-skeleton" key={item} aria-label="Loading room" />)}</div>
+        : dateError ? <div className="rooms-empty"><h3>Check your dates</h3><p>{dateError}</p></div>
+        : error ? <div className="rooms-empty"><h3>Something went wrong, please retry</h3><p>{error}</p><button className="btn gold" type="button" onClick={() => setReload(value => value + 1)}>Retry</button></div>
+          : rooms.length ? <div className="room-grid">{rooms.map((room, i) => <Reveal key={room.id} delay={i * .06}><RoomCard room={room} bookingQuery={filters} /></Reveal>)}</div>
+            : <div className="rooms-empty"><h3>{datesValid ? 'No rooms available for these dates' : 'No rooms match your filters'}</h3><p>{datesValid ? 'Try nearby dates or adjust your filters.' : 'Adjust your filters or reset to see all published rooms.'}</p>{datesValid&&<><button className="btn gold" type="button" disabled={nearbyLoading} onClick={suggestNearbyDates}>{nearbyLoading?'Checking nearby dates…':'Suggest nearby dates'}</button>{nearbyDates.map(item=><button type="button" className="reset-filter nearby-date-option" key={item.checkIn} onClick={()=>{update('checkIn',item.checkIn);update('checkOut',item.checkOut);}}>{item.checkIn} – {item.checkOut}</button>)}</>}<button className="reset-filter" type="button" onClick={reset}>Reset filters</button></div>}
     </section>
   </>;
 }

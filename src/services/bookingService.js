@@ -7,9 +7,9 @@ export async function createBooking(form) {
   ensureSupabaseConfigured();
   try {
     // Fast client-side check for a clear message; the RPC independently checks overlap.
-    const availableIds = await getAvailableRoomIds(form.checkIn, form.checkOut);
+    const availableIds = await getAvailableRoomIds(form.checkIn, form.checkOut, Number(form.adults), Number(form.children));
     if (!availableIds.includes(String(form.roomId))) {
-      throw new Error('Aa dates par room available nathi. Biji dates ke room select karo.');
+      throw new Error('Room is no longer available for these dates. Please choose another room or date.');
     }
     const { data: { session } } = await supabase.auth.getSession();
     const response = await fetch('/api/bookings', {

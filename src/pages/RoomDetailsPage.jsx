@@ -6,7 +6,6 @@ import GuestStepper from '../components/common/GuestStepper.jsx';
 import Img from '../components/Img.jsx';
 import RoomCard from '../components/RoomCard.jsx';
 import { getRoomById, getRooms, getAvailableRoomIds, formatINR } from '../services/roomService.js';
-import { getBookedRanges } from '../services/bookingService.js';
 import { isRoomBookable } from '../lib/roomUtils.js';
 import { localDateString, nextDate } from '../components/common/dateOnly.js';
 import './RoomDetailsPage.css';
@@ -17,11 +16,11 @@ const today=localDateString();
 export default function RoomDetailsPage(){
   const {id}=useParams();const [searchParams]=useSearchParams();
   const [room,setRoom]=useState(null),[similar,setSimilar]=useState([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
-  const [activeImage,setActiveImage]=useState(0),[lightbox,setLightbox]=useState(-1),[touchX,setTouchX]=useState(null),[bookedRanges,setBookedRanges]=useState([]),[availabilityError,setAvailabilityError]=useState(''),[availableSimilarIds,setAvailableSimilarIds]=useState(null);
+  const [activeImage,setActiveImage]=useState(0),[lightbox,setLightbox]=useState(-1),[touchX,setTouchX]=useState(null),[availabilityError,setAvailabilityError]=useState(''),[availabilityLoading,setAvailabilityLoading]=useState(false),[availableSimilarIds,setAvailableSimilarIds]=useState(null);
   const [stay,setStay]=useState(()=>({checkIn:searchParams.get('checkIn')||'',checkOut:searchParams.get('checkOut')||'',adults:Math.max(1,Math.min(6,Number(searchParams.get('adults'))||1)),children:Math.max(0,Math.min(4,Number(searchParams.get('children'))||0))}));
   const load=useCallback(async()=>{setLoading(true);setError('');try{const [found,all]=await Promise.all([getRoomById(id),getRooms()]);setRoom(found);setSimilar(found?all.filter(item=>String(item.id)!==String(id)&&item.room_type===found.room_type).slice(0,3):[]);setActiveImage(0);}catch(e){console.error('[room details] load failed',e);setError(e?.message||'Room details could not load. Please try again.');}finally{setLoading(false);}},[id]);
   useEffect(()=>{load();window.scrollTo({top:0,left:0,behavior:'instant'});},[load]);
-  useEffect(()=>{if(!room?.id)return;let active=true;const refresh=()=>{setAvailabilityError('');getBookedRanges(room.id).then(data=>active&&setBookedRanges(data)).catch(error=>active&&setAvailabilityError(error?.message||'Availability could not be checked.'));if(stay.checkIn&&stay.checkOut>stay.checkIn)getAvailableRoomIds(stay.checkIn,stay.checkOut).then(ids=>active&&setAvailableSimilarIds(ids)).catch(()=>active&&setAvailableSimilarIds(null));else setAvailableSimilarIds(null);};refresh();window.addEventListener('focus',refresh);return()=>{active=false;window.removeEventListener('focus',refresh);};},[room?.id,stay.checkIn,stay.checkOut]);
+  useEffect(()=>{if(!room?.id)return;let active=true;const refresh=()=>{if(!stay.checkIn||!stay.checkOut||stay.checkOut<=stay.checkIn){setAvailableSimilarIds(null);setAvailabilityError('');setAvailabilityLoading(false);return;}setAvailabilityLoading(true);setAvailabilityError('');setAvailableSimilarIds(null);getAvailableRoomIds(stay.checkIn,stay.checkOut,stay.adults,stay.children).then(ids=>active&&setAvailableSimilarIds(ids)).catch(error=>{if(active){console.error('[room details] availability failed',{message:error.message,details:error.details,hint:error.hint,code:error.code,error});setAvailabilityError('Availability could not be checked. Please retry.');}}).finally(()=>active&&setAvailabilityLoading(false));};refresh();window.addEventListener('focus',refresh);return()=>{active=false;window.removeEventListener('focus',refresh);};},[room?.id,stay.checkIn,stay.checkOut,stay.adults,stay.children]);
   const gallery=useMemo(()=>room?.image_urls?.filter(Boolean)||[],[room]);
   const moveImage=useCallback((direction)=>{const count=gallery.length;if(count>1)setLightbox(index=>(index+direction+count)%count);},[gallery.length]);
   useEffect(()=>{if(lightbox<0)return;const onKey=(e)=>{if(e.key==='Escape')setLightbox(-1);if(e.key==='ArrowRight')moveImage(1);if(e.key==='ArrowLeft')moveImage(-1);};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey);},[lightbox,moveImage]);
@@ -34,10 +33,10 @@ export default function RoomDetailsPage(){
   const bookingParams=new URLSearchParams({roomId:String(room.id)});Object.entries(stay).forEach(([key,value])=>{if(value!==''&&value!=null)bookingParams.set(key,String(value));});
   const bookingUrl=`/booking?${bookingParams.toString()}`;const roomsParams=new URLSearchParams(searchParams);const backUrl=`/rooms${roomsParams.size?`?${roomsParams}`:''}`;
   const unavailable=!isRoomBookable(room);
-  const overlapsStay=Boolean(stay.checkIn&&stay.checkOut&&bookedRanges.some(range=>range.check_in<stay.checkOut&&range.check_out>stay.checkIn));
-  const unavailableForDates=unavailable||overlapsStay;
-  const checkInBlocked=date=>bookedRanges.some(range=>range.check_in<=date&&range.check_out>date);
-  const checkOutBlocked=date=>!stay.checkIn||date<=stay.checkIn||bookedRanges.some(range=>stay.checkIn<range.check_out&&date>range.check_in&&date<=range.check_out);
+  const hasValidStay=Boolean(stay.checkIn&&stay.checkOut&&stay.checkOut>stay.checkIn);
+  const unavailableForDates=unavailable||(hasValidStay&&availableSimilarIds!==null&&!availableSimilarIds.includes(String(room.id)));
+  const checkInBlocked=date=>date<today;
+  const checkOutBlocked=date=>!stay.checkIn||date<=stay.checkIn;
   return <main className="room-details-page-v2">
     <div className="room-detail-breadcrumb"><Link to="/">Home</Link><span>/</span><Link to={backUrl}>Rooms</Link><span>/</span><b>{roomTitle}</b></div>
     <div className="room-detail-head"><Link className="room-detail-back" to={backUrl}><ArrowLeft size={16}/> Back to Rooms</Link><div><span className="room-detail-type">{room.room_type}</span><h1>{roomTitle}</h1>{numericName&&<small>Room {room.room_name}</small>}{room.rating!=null&&<span className="room-detail-rating">★ {room.rating} <small>Guest rating</small></span>}</div></div>
@@ -58,13 +57,13 @@ export default function RoomDetailsPage(){
         <DateField id="detail-checkin" label="Check-in" variant="page" min={today} value={stay.checkIn} isDateDisabled={checkInBlocked} onChange={checkIn=>setStay(old=>({...old,checkIn,checkOut:old.checkOut&&old.checkOut<=checkIn?'':old.checkOut}))}/>
         <DateField id="detail-checkout" label="Check-out" variant="page" min={stay.checkIn?nextDate(stay.checkIn):nextDate(today)} value={stay.checkOut} isDateDisabled={checkOutBlocked} onChange={checkOut=>setStay(old=>({...old,checkOut}))}/>
         <div className="room-detail-guests"><GuestStepper label="Adults" value={stay.adults} min={1} max={Math.min(6,room.capacity||6)} variant="page" onChange={adults=>setStay(old=>({...old,adults,children:Math.min(old.children,Math.max(0,(room.capacity||6)-adults))}))}/><GuestStepper label="Children" value={stay.children} min={0} max={Math.min(4,Math.max(0,(room.capacity||6)-stay.adults))} variant="page" onChange={children=>setStay(old=>({...old,children}))}/></div>
-        {unavailableForDates&&<p className="room-dates-unavailable" role="alert">Aa dates par room available nathi.</p>}{availabilityError&&<p className="room-dates-unavailable" role="alert">{availabilityError}</p>}
+        {unavailableForDates&&<p className="room-dates-unavailable" role="alert">No room units are available for these dates.</p>}{availabilityError&&<p className="room-dates-unavailable" role="alert">{availabilityError}</p>}
         <div className="room-detail-live-total"><span>{nights?`${nights} night${nights===1?'':'s'} × ${formatINR(room.price)}`:'Select dates to see total'}</span>{nights>0&&<b>{formatINR(subtotal)}</b>}{nights>0&&<><span>GST (12%)</span><b>{formatINR(tax)}</b><strong>Total</strong><strong>{formatINR(total)}</strong></>}</div>
-        {unavailableForDates?<button className="btn gold room-detail-book-cta" disabled>Currently unavailable</button>:<Link className="btn gold room-detail-book-cta" to={bookingUrl}>Book Now <ArrowRight size={17}/></Link>}
+        {unavailableForDates||availabilityLoading?<button className="btn gold room-detail-book-cta" disabled>{availabilityLoading?'Checking availability…':'Currently unavailable'}</button>:<Link className="btn gold room-detail-book-cta" to={bookingUrl}>Book Now <ArrowRight size={17}/></Link>}
       </aside>
     </div>
     {similar.length>0&&<section className="room-detail-similar"><div className="section-head"><span className="room-detail-eyebrow">MORE TO DISCOVER</span><h2>Similar <i>rooms</i></h2></div><div className="room-grid">{similar.filter(item=>!availableSimilarIds||availableSimilarIds.includes(String(item.id))).map(item=><RoomCard key={item.id} room={item} bookingQuery={stay}/>)}</div></section>}
     {lightbox>=0&&gallery.length>0&&<div className="room-lightbox" role="dialog" aria-modal="true" aria-label="Room photo fullscreen" onClick={()=>setLightbox(-1)}><button type="button" className="room-lightbox-close" aria-label="Close fullscreen photo" onClick={()=>setLightbox(-1)}>×</button>{gallery.length>1&&<button type="button" className="room-lightbox-arrow left" aria-label="Previous photo" onClick={e=>{e.stopPropagation();moveImage(-1)}}><ChevronLeft/></button>}<div className="room-lightbox-image" onClick={event=>event.stopPropagation()}><Img src={gallery[lightbox]} alt={`${roomTitle} photo ${lightbox+1} of ${gallery.length}`}/></div>{gallery.length>1&&<button type="button" className="room-lightbox-arrow right" aria-label="Next photo" onClick={e=>{e.stopPropagation();moveImage(1)}}><ChevronRight/></button>}</div>}
-    <div className="room-detail-mobile-book"><strong>{formatINR(room.price)} <small>/ night</small></strong>{unavailableForDates?<button type="button" disabled>Currently unavailable</button>:<Link to={bookingUrl} aria-label={`Book ${roomTitle}`}>Book Now <ArrowRight size={16}/></Link>}</div>
+    <div className="room-detail-mobile-book"><strong>{formatINR(room.price)} <small>/ night</small></strong>{unavailableForDates||availabilityLoading?<button type="button" disabled>{availabilityLoading?'Checking availability…':'Currently unavailable'}</button>:<Link to={bookingUrl} aria-label={`Book ${roomTitle}`}>Book Now <ArrowRight size={16}/></Link>}</div>
   </main>;
 }

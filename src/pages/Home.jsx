@@ -20,7 +20,7 @@ import DateField from '../components/common/DateField.jsx';
 import GuestStepper from '../components/common/GuestStepper.jsx';
 import { localDateString, nextDate } from '../components/common/dateOnly.js';
 import useRooms from '../hooks/useRooms.js';
-import { getAvailableRoomIds } from '../services/roomService.js';
+import { searchRooms } from '../services/roomService.js';
 import { testimonials } from '../data/testimonials.js';
 
 const services = [
@@ -38,13 +38,13 @@ export default function Home() {
   const [review, setReview] = useState(0);
   const [search, setSearch] = useState({ checkIn: '', checkOut: '', adults: 1, children: 0 });
   const [dateError, setDateError] = useState('');
-  const [availableIds, setAvailableIds] = useState(null);
+  const [availableRooms, setAvailableRooms] = useState(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilityError, setAvailabilityError] = useState('');
   const [availabilityReload, setAvailabilityReload] = useState(0);
   const datesValid = Boolean(search.checkIn && search.checkOut && search.checkOut > search.checkIn);
   const allRooms = roomState.rooms;
-  const rooms = allRooms.filter(room => !datesValid || (availableIds && availableIds.includes(String(room.id)))).slice(0, 3);
+  const rooms = (datesValid ? availableRooms || [] : allRooms).slice(0, 3);
   const touchStart = useRef(null);
 
   useEffect(() => {
@@ -57,14 +57,14 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!datesValid || !allRooms.length) { setAvailableIds(null); setAvailabilityError(''); setAvailabilityLoading(false); return; }
+    if (!datesValid) { setAvailableRooms(null); setAvailabilityError(''); setAvailabilityLoading(false); return; }
     let active = true;
-    const load = () => { setAvailabilityLoading(true); setAvailabilityError(''); getAvailableRoomIds(search.checkIn, search.checkOut)
-      .then(ids => active && setAvailableIds(ids)).catch(error => { if (active) { setAvailableIds([]); setAvailabilityError(error?.message || 'Could not check room availability.'); } })
+    const load = () => { setAvailabilityLoading(true); setAvailabilityError(''); searchRooms({ checkIn: search.checkIn, checkOut: search.checkOut, adults: search.adults, children: search.children })
+      .then(result => active && setAvailableRooms(result.rooms)).catch(error => { if (active) { console.error('[home] availability failed', { message: error.message, details: error.details, hint: error.hint, code: error.code, error }); setAvailableRooms([]); setAvailabilityError(error?.message || 'Could not check room availability.'); } })
       .finally(() => active && setAvailabilityLoading(false)); };
     load(); window.addEventListener('focus', load);
     return () => { active = false; window.removeEventListener('focus', load); };
-  }, [datesValid, search.checkIn, search.checkOut, allRooms.length, availabilityReload]);
+  }, [datesValid, search.checkIn, search.checkOut, search.adults, search.children, availabilityReload]);
 
   function swipeEnd(event) {
     if (touchStart.current === null) return;
@@ -85,7 +85,7 @@ export default function Home() {
         <form className="palace-search-form home-booking-search" onSubmit={(event) => {
           event.preventDefault();
           if (!search.checkIn || !search.checkOut || search.checkOut <= search.checkIn) {
-            setDateError('Check-in ane check-out date select karo');
+          setDateError('Choose valid check-in and check-out dates.');
             return;
           }
           setDateError('');
@@ -201,13 +201,13 @@ export default function Home() {
           </div>
         ) : roomState.error ? (
           <div className="empty-state">
-            <h3>Rooms load na thaya</h3>
+            <h3>Something went wrong, please retry</h3>
             <p>Please try again.</p>
             <button className="btn gold" onClick={roomState.retry}>
               Try again
             </button>
           </div>
-        ) : datesValid && availabilityLoading ? (
+        ) : datesValid && (availabilityLoading || availableRooms === null) ? (
           <div className="room-grid featured-room-grid">{[1,2,3].map(item=><div className="room-card room-skeleton" key={item}/>)}</div>
         ) : availabilityError ? (
           <div className="empty-state"><h3>Availability check failed</h3><p>{availabilityError}</p><button className="btn gold" onClick={()=>setAvailabilityReload(value=>value+1)}>Retry</button></div>
@@ -221,7 +221,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="empty-state">
-            {datesValid ? <><h3>Aa dates par koi room available nathi</h3><p>Dates badlo athva room listings juo.</p><Link className="btn gold" to="/rooms">Choose different dates</Link></> : 'We’re preparing our rooms for you. Please check back soon.'}
+            {datesValid ? <><h3>No rooms available for these dates</h3><p>Try different dates or view all room listings.</p><Link className="btn gold" to="/rooms">Choose different dates</Link></> : 'We’re preparing our rooms for you. Please check back soon.'}
           </div>
         )}
       </section>

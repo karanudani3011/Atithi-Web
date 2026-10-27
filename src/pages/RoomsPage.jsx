@@ -3,14 +3,15 @@ import Banner from '../components/Banner.jsx';
 import Reveal from '../components/Reveal.jsx';
 import RoomCard from '../components/RoomCard.jsx';
 import useRooms from '../hooks/useRooms.js';
-
-const filters = ['All', 'Deluxe', 'Suite', 'Family', 'Villa'];
+import useRoomTypes from '../hooks/useRoomTypes.js';
 
 export default function RoomsPage() {
   const [filter, setFilter] = useState('All');
-  const rooms = useRooms();
+  const roomState = useRooms();
+  const { types } = useRoomTypes({ activeOnly: true });
+  const filters = ['All', ...types.map(type => type.name)];
 
-  const list = filter === 'All' ? rooms : rooms.filter((x) => x.type === filter);
+  const list = filter === 'All' ? roomState.rooms : roomState.rooms.filter((room) => room.type === filter);
 
   return (
     <>
