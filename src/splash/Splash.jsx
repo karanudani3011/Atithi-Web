@@ -1,45 +1,32 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import SplashScene from './SplashScene.jsx';
 
 export default function Splash({ onFinish }) {
-  const [ended, setEnded] = useState(false);
+  const [play, setPlay] = useState(false);
+  const [done, setDone] = useState(false);
+  const finished = useRef(false);
+  const autoTimer = useRef(null);
+  const finishTimer = useRef(null);
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
 
   const finish = useCallback(() => {
-    if (!ended) {
-      setEnded(true);
-      setTimeout(onFinish, 650);
-    }
-  }, [ended, onFinish]);
+    if (finished.current) return;
+    finished.current = true;
+    window.clearTimeout(autoTimer.current);
+    setDone(true);
+    finishTimer.current = window.setTimeout(() => onFinishRef.current?.(), 800);
+  }, []);
 
-  // Support Escape key to quickly skip
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        finish();
-      }
+    setPlay(true);
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    autoTimer.current = window.setTimeout(finish, reduceMotion ? 2500 : 8800);
+    return () => {
+      window.clearTimeout(autoTimer.current);
+      window.clearTimeout(finishTimer.current);
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [finish]);
 
-  return (
-    <div className={`splash ${ended ? 'splash-out' : ''}`}>
-      {/* Skip button – keyboard accessible */}
-      <button
-        type="button"
-        className="skip"
-        onClick={finish}
-        aria-label="Skip intro and enter website"
-        title="Press Escape to skip"
-      >
-        SKIP ›
-      </button>
-
-      <SplashScene onFinish={finish} />
-
-      <div className="loading-dots" aria-hidden="true">
-        <i /><i /><i />
-      </div>
-    </div>
-  );
+  return <SplashScene play={play} done={done} onSkip={finish} />;
 }

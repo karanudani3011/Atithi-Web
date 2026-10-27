@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -9,19 +9,18 @@ import {
   Sparkles,
   Car,
   Wifi,
-  Quote,
   BedDouble,
 } from 'lucide-react';
 import PalaceHero from '../components/PalaceHero.jsx';
 import Reveal from '../components/Reveal.jsx';
-import Counter from '../components/Counter.jsx';
+import StatsSection from '../components/home/StatsSection.jsx';
+import Testimonials from '../components/home/Testimonials.jsx';
 import Img from '../components/Img.jsx';
 import DateField from '../components/common/DateField.jsx';
 import GuestStepper from '../components/common/GuestStepper.jsx';
 import { localDateString, nextDate } from '../components/common/dateOnly.js';
 import useRooms from '../hooks/useRooms.js';
 import { searchRooms } from '../services/roomService.js';
-import { testimonials } from '../data/testimonials.js';
 
 const services = [
   ['Concierge', ConciergeBell],
@@ -35,7 +34,6 @@ const services = [
 export default function Home() {
   const nav = useNavigate();
   const roomState = useRooms({ ratingFirst: true });
-  const [review, setReview] = useState(0);
   const [search, setSearch] = useState({ checkIn: '', checkOut: '', adults: 1, children: 0 });
   const [dateError, setDateError] = useState('');
   const [availableRooms, setAvailableRooms] = useState(null);
@@ -45,16 +43,6 @@ export default function Home() {
   const datesValid = Boolean(search.checkIn && search.checkOut && search.checkOut > search.checkIn);
   const allRooms = roomState.rooms;
   const rooms = (datesValid ? availableRooms || [] : allRooms).slice(0, 3);
-  const touchStart = useRef(null);
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const reviewTimer = window.setInterval(
-      () => setReview((v) => (v + 1) % testimonials.length),
-      6000
-    );
-    return () => clearInterval(reviewTimer);
-  }, []);
 
   useEffect(() => {
     if (!datesValid) { setAvailableRooms(null); setAvailabilityError(''); setAvailabilityLoading(false); return; }
@@ -65,15 +53,6 @@ export default function Home() {
     load(); window.addEventListener('focus', load);
     return () => { active = false; window.removeEventListener('focus', load); };
   }, [datesValid, search.checkIn, search.checkOut, search.adults, search.children, availabilityReload]);
-
-  function swipeEnd(event) {
-    if (touchStart.current === null) return;
-    const distance = event.changedTouches[0].clientX - touchStart.current;
-    touchStart.current = null;
-    if (Math.abs(distance) > 45) {
-      setReview((value) => (value + (distance < 0 ? 1 : -1) + testimonials.length) % testimonials.length);
-    }
-  }
 
   return (
     <div className="home-page-root">
@@ -222,58 +201,11 @@ export default function Home() {
         )}
       </section>
 
-      {/* ── Key Statistics Band ── */}
-      <section className="stats-band">
-        <div className="stats-inner">
-          {[
-            ['', 25, '+', 'Years of hospitality'],
-            ['', 150, '', 'Beautiful rooms'],
-            ['', 50000, '+', 'Happy guests'],
-            ['', 98, '%', 'Guest satisfaction'],
-          ].map(([p, n, s, l]) => (
-            <div key={l}>
-              <strong><Counter to={n} suffix={s} prefix={p} /></strong>
-              <span>{l}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── Guest statistics ── */}
+      <StatsSection />
 
-      {/* ── Testimonials ── */}
-      <section className="section testimonials">
-        <Reveal className="section-head">
-          <div className="eyebrow">KIND WORDS, KEPT CLOSE</div>
-          <h2>Guests say it <i>best</i></h2>
-        </Reveal>
-        <div
-          className="review-card"
-          onTouchStart={(event) => {
-            touchStart.current = event.touches[0].clientX;
-          }}
-          onTouchEnd={swipeEnd}
-        >
-          <Quote className="quote-mark" />
-          <div className="review-stars">★★★★★</div>
-          <p>“{testimonials[review].text}”</p>
-          <div className="review-person">
-            <span>{testimonials[review].name.slice(0, 1)}</span>
-            <div>
-              <b>{testimonials[review].name}</b>
-              <small>{testimonials[review].city}</small>
-            </div>
-          </div>
-          <div className="review-dots">
-            {testimonials.map((_, i) => (
-              <button
-                key={i}
-                className={i === review ? 'selected' : ''}
-                aria-label={`Review ${i + 1}`}
-                onClick={() => setReview(i)}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── Guest testimonials ── */}
+      <Testimonials />
 
       {/* ── Call to Action Band ── */}
       <section className="cta-band">

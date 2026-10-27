@@ -93,8 +93,6 @@ button,input,select,textarea{min-width:0;max-width:100%}
   .hero-shade{background:linear-gradient(90deg,#07142ef0 0%,#07142ec9 43%,#07142e70 72%,#07142e2b),linear-gradient(0deg,#07142e99,transparent 55%)}
   .service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .room-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .stats-inner{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:22px}
-  .stats-inner>div:nth-child(2){border:0}
   .room-image{height:auto}
   .about-preview,.story-section{gap:6%}
   .booking-layout{grid-template-columns:minmax(0,1fr);}
@@ -195,18 +193,6 @@ button,input,select,textarea{min-width:0;max-width:100%}
   .room-bottom .btn{min-height:44px}
   .unavailable-text{font-size:14px}
   .summary-room span,.summary-room>strong,.summary-info span,.summary-line,.booking-summary>small,.confirmed-card p{font-size:14px}
-  .stats-band{padding:38px 16px}
-  .stats-inner{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:22px}
-  .stats-inner>div{min-height:80px}
-  .stats-inner>div:nth-child(2){border:0}
-  .stats-inner strong{font-size:clamp(27px,8vw,36px)}
-  .stats-inner span{font-size:14px}
-  .review-card{width:100%;padding:27px 18px;border-radius:20px;touch-action:pan-y}
-  .review-card>p{font-size:17px;line-height:1.55}
-  .review-person b,.review-person small{font-size:14px}
-  .review-dots button{min-width:24px;min-height:24px;display:grid;place-items:center;position:relative;background:transparent}
-  .review-dots button:after{content:'';width:8px;height:8px;border-radius:50%;background:#d6d1c8}
-  .review-dots button.selected:after{width:23px;border-radius:9px;background:var(--gold)}
   .cta-band{padding:clamp(48px,12vw,68px) 18px calc(52px + env(safe-area-inset-bottom))}
   .cta-band .eyebrow{justify-content:center;font-size:12px}
   .cta-band h2{font-size:clamp(1.7rem,8vw,2.5rem)}
@@ -402,7 +388,6 @@ button,input,select,textarea{min-width:0;max-width:100%}
   .eyebrow,.welcome-pill,.form-error,.form-note,.room-title>span,.logo-tag,.footer-bottom,.admin-eyebrow,.admin-side-label,.admin-side-foot,.admin-date-chip,.admin-count-pill,.admin-panel-title .admin-muted,.admin-filter select,.admin-table th,.admin-table td,.admin-room-title,.admin-role,.booking-code,.access-error{font-size:14px}
   .admin-side-nav>a,.admin-view-site,.admin-logout{font-size:15px}
   .social a{min-width:44px;min-height:44px}
-  .review-dots button{min-width:44px;min-height:44px}
 }
 
 @media(max-width:479px){

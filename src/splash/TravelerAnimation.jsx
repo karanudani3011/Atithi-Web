@@ -1,447 +1,155 @@
 import React from 'react';
 
-/**
- * TravelerAnimation
- * Premium 2D-illustrated young adult male traveler (22-28 yrs old).
- * Professional brand-mascot quality inspired by reference.
- *
- * Anatomy & Styling:
- * - Smart, attractive hairstyle with textured volume and clean fade
- * - Handsome, well-defined facial features with confident friendly expression
- * - Athletic, natural young-adult body proportions (balanced head-to-body ratio)
- * - Well-fitted crisp white T-shirt with natural fabric draping
- * - Stylish dark-blue tailored trousers with clean seamlines
- * - Modern white sneakers with clean soles firmly aligned to the ground
- * - Fitted mustard-orange travel backpack
- * - Realistic red hardshell rolling suitcase (trolley) with metallic handle and spinning wheels
- */
-export default function TravelerAnimation({ phase = 'walk' }) {
-  // phase: 'walk' | 'pause' | 'entering' | 'entered'
-  const isWalking = phase === 'walk';
-  const isEntering = phase === 'entering';
-  const isEntered = phase === 'entered';
-
+export default function TravelerAnimation() {
   return (
-    <div
-      className={`traveler-container traveler-phase-${phase}`}
-      aria-hidden="true"
-    >
-      <svg
-        className={`traveler-svg ${isWalking ? 'is-walking' : ''} ${isEntering ? 'is-entering' : ''}`}
-        viewBox="0 0 180 230"
-        width="155"
-        height="198"
-        aria-hidden="true"
-        style={{
-          overflow: 'visible',
-          opacity: isEntered ? 0 : 1,
-          transform: isEntering ? 'scale(0.72) translateY(-4px)' : 'scale(1)',
-          transformOrigin: 'bottom center',
-          transition: 'transform 1.1s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s ease',
-        }}
-      >
-        <defs>
-          {/* Floor Contact Shadows */}
-          <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#040b18" stopOpacity="0.55" />
-            <stop offset="60%" stopColor="#040b18" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="#040b18" stopOpacity="0" />
-          </radialGradient>
+    <div className="spx-walker">
+      <div className="spx-scaler">
+        <div className="spx-enter">
+<svg className="spx-pose spx-side" viewBox="0 0 240 300" role="img" aria-label="Traveller with a red suitcase walking to the hotel">
+      <ellipse cx="112" cy="295" rx="84" ry="5" fill="#000" opacity=".4"/>
+      <g className="spx-bobg">
+        <g className="spx-case"><g transform="rotate(10 45 288)">
+          <path d="M36 204V162M54 204V162" stroke="#b9c0cd" strokeWidth="3.5" strokeLinecap="round"/>
+          <rect x="31" y="157" width="28" height="7" rx="3.5" fill="#e6e9f0"/>
+          <rect x="17" y="204" width="56" height="80" rx="10" fill="url(#csr)"/>
+          <path d="M29 212v64M41 212v64M53 212v64M65 212v64" stroke="#8c1816" strokeWidth="2.6" strokeLinecap="round" opacity=".55"/>
+          <rect x="17" y="204" width="56" height="80" rx="10" fill="none" stroke="#f4736b" strokeWidth="1.6"/>
+          <rect x="35" y="197" width="20" height="9" rx="4" fill="#7a1917"/>
+          <path d="M17 218h56M17 272h56" stroke="#d4a437" strokeWidth="2.5"/>
+          <circle cx="58" cy="245" r="7" fill="#f2c94c"/>
+          <path d="M58 240l1.6 3.4 3.7.4-2.7 2.5.8 3.7-3.4-1.9-3.4 1.9.8-3.7-2.7-2.5 3.7-.4z" fill="#b8860b"/>
+          <circle cx="30" cy="288" r="5.5" fill="#1d2027"/><circle cx="62" cy="288" r="5.5" fill="#1d2027"/>
+          <circle cx="30" cy="288" r="2" fill="#9aa0aa"/><circle cx="62" cy="288" r="2" fill="#9aa0aa"/>
+        </g></g>
 
-          {/* Natural Skin Gradients */}
-          <linearGradient id="skinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ffd8b8" />
-            <stop offset="60%" stopColor="#f7ba8d" />
-            <stop offset="100%" stopColor="#e39a67" />
-          </linearGradient>
+        {/*  far arm holding the handle  */}
+        <path d="M112 93L97 134" stroke="#b9801a" strokeWidth="15" strokeLinecap="round"/>
+        <path d="M97 134L76 156" stroke="#b9801a" strokeWidth="13" strokeLinecap="round"/>
+        <path d="M76 156L71 161" stroke="#1b2f5e" strokeWidth="13" strokeLinecap="round"/>
+        <circle cx="67" cy="164" r="6.5" fill="#d99a6c"/>
 
-          <linearGradient id="skinShade" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#f5ae7e" />
-            <stop offset="100%" stopColor="#d98048" />
-          </linearGradient>
+        {/*  far leg  */}
+        <g className="spx-thF"><path d="M101 148Q119 143 137 148L133 210Q119 214 106 210Z" fill="#15294f"/>
+          <g className="spx-shF"><path d="M106 206Q119 211 133 206L129 268Q119 271 110 268Z" fill="#15294f"/>
+            <rect x="108" y="250" width="22" height="8" rx="3" fill="#2d4f90"/>
+            <path d="M109 266H129L130 274C143 275 155 280 157 288C157 292 154 293 150 293H110C106 293 105 289 107 285Z" fill="#dfe4ee"/>
+            <path d="M106 291H156" stroke="#bda35e" strokeWidth="3.5" strokeLinecap="round"/>
+          </g></g>
 
-          {/* Smart Hairstyle Gradients */}
-          <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#3d2b20" />
-            <stop offset="50%" stopColor="#241710" />
-            <stop offset="100%" stopColor="#140c08" />
-          </linearGradient>
+        {/*  backpack  */}
+        <rect x="76" y="82" width="28" height="66" rx="12" fill="url(#bpk)"/>
+        <path d="M80 108H102" stroke="#3b4f8a" strokeWidth="1.6"/>
+        <rect x="77" y="118" width="12" height="22" rx="5" fill="#16224a"/>
+        <circle cx="95" cy="108" r="1.8" fill="#d4a437"/>
+        <path d="M82 86Q90 80 100 84" stroke="#0f1836" strokeWidth="3" fill="none" strokeLinecap="round"/>
 
-          <linearGradient id="hairHighlight" x1="0%" y1="0%" x2="100%" y2="50%">
-            <stop offset="0%" stopColor="#634533" />
-            <stop offset="100%" stopColor="#382215" />
-          </linearGradient>
+        {/*  jacket  */}
+        <path d="M99 88C106 80 126 80 134 90C139 102 138 128 136 152H99C97 128 97 102 99 88Z" fill="url(#jkt)"/>
+        <path d="M127 84C133 90 136 100 136 112L135 150H128C130 128 130 104 127 84Z" fill="#fbfaf6"/>
+        <path d="M127 86V150" stroke="#8c5d0c" strokeWidth="1.4"/>
+        <path d="M99 90C97 110 98 130 99 150H108C106 128 106 108 108 88Z" fill="#b9801a" opacity=".35"/>
+        <path d="M112 128L121 134" stroke="#a8700f" strokeWidth="1.6" strokeLinecap="round"/>
+        <path d="M104 86C110 100 112 124 108 146" stroke="#1f2f5c" strokeWidth="6" fill="none" strokeLinecap="round"/>
+        <rect x="104" y="116" width="7" height="5" rx="1.5" fill="#d4a437"/>
+        <rect x="97" y="146" width="42" height="9" rx="4.5" fill="#1b2f5e"/>
+        <path d="M105 84Q118 98 134 86V93Q118 106 105 92Z" fill="#1b2f5e"/>
 
-          {/* Fitted White Shirt */}
-          <linearGradient id="shirtGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ffffff" />
-            <stop offset="70%" stopColor="#f4f6f9" />
-            <stop offset="100%" stopColor="#e1e6ee" />
-          </linearGradient>
+        {/*  near leg  */}
+        <g className="spx-thN"><path d="M101 148Q119 143 137 148L133 210Q119 214 106 210Z" fill="url(#pnt)"/>
+          <path d="M112 156L116 200" stroke="#12264d" strokeWidth="1.2" opacity=".35"/>
+          <g className="spx-shN"><path d="M106 206Q119 211 133 206L129 268Q119 271 110 268Z" fill="url(#pnt)"/>
+            <rect x="108" y="250" width="22" height="8" rx="3" fill="#3d63a8"/>
+            <rect x="111" y="259" width="16" height="8" fill="#d99a6c"/>
+            <path d="M109 266H129L130 274C143 275 155 280 157 288C157 292 154 293 150 293H110C106 293 105 289 107 285Z" fill="#f7f8fb" stroke="#cdd3e0" strokeWidth="1"/>
+            <path d="M138 276C148 278 154 282 156 288H140Z" fill="#fff"/>
+            <path d="M120 268l7 4M118 272l7 4" stroke="#aab4cc" strokeWidth="1.4" strokeLinecap="round"/>
+            <path d="M106 291H156" stroke="#e1cf9f" strokeWidth="4" strokeLinecap="round"/>
+            <path d="M108 289H154" stroke="#d4a437" strokeWidth="1.4"/>
+          </g></g>
 
-          <linearGradient id="shirtShadow" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#f1f5f9" />
-            <stop offset="100%" stopColor="#cbd5e1" />
-          </linearGradient>
-
-          {/* Stylish Dark-Blue Trousers */}
-          <linearGradient id="pantsFront" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#1e3a68" />
-            <stop offset="45%" stopColor="#162c50" />
-            <stop offset="100%" stopColor="#0f1d38" />
-          </linearGradient>
-
-          <linearGradient id="pantsBack" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#162c50" />
-            <stop offset="50%" stopColor="#0f1f3a" />
-            <stop offset="100%" stopColor="#0a1528" />
-          </linearGradient>
-
-          {/* Mustard / Orange Travel Backpack */}
-          <linearGradient id="backpackGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#f59e0b" />
-            <stop offset="40%" stopColor="#ea580c" />
-            <stop offset="100%" stopColor="#b43403" />
-          </linearGradient>
-
-          <linearGradient id="backpackFrontPocket" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fb923c" />
-            <stop offset="70%" stopColor="#ea580c" />
-            <stop offset="100%" stopColor="#9a3412" />
-          </linearGradient>
-
-          {/* Red Rolling Suitcase */}
-          <linearGradient id="suitcaseBody" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#ef4444" />
-            <stop offset="35%" stopColor="#dc2626" />
-            <stop offset="85%" stopColor="#b91c1c" />
-            <stop offset="100%" stopColor="#7f1d1d" />
-          </linearGradient>
-
-          <linearGradient id="suitcaseGloss" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.4" />
-            <stop offset="18%" stopColor="#ffffff" stopOpacity="0.05" />
-            <stop offset="100%" stopColor="#000000" stopOpacity="0.25" />
-          </linearGradient>
-
-          {/* Metallic Pull Handle */}
-          <linearGradient id="metalPoles" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#475569" />
-            <stop offset="45%" stopColor="#94a3b8" />
-            <stop offset="60%" stopColor="#e2e8f0" />
-            <stop offset="100%" stopColor="#334155" />
-          </linearGradient>
-        </defs>
-
-        {/* ── Floor Contact Shadows ── */}
-        <g className="traveler-shadows">
-          {/* Suitcase wheels shadow */}
-          <ellipse cx="38" cy="216" rx="22" ry="5.5" fill="url(#floorShadow)" />
-          {/* Boy feet contact shadow */}
-          <ellipse cx="106" cy="217" rx="36" ry="6.5" fill="url(#floorShadow)" />
+        {/*  neck + head  */}
+        <path d="M116 66H129L131 88H113Z" fill="#d99a6c"/>
+        <g transform="translate(125 73) scale(.86) translate(-125 -73)">
+          <path d="M113 38C122 34 133 37 136 46L137 49C138 51 141 54 142 56C142 58 139 59 137 59L138 61L136.5 63L138 65C138 69 135 72 130 73C124 74 117 70 113 64Z" fill="url(#skn)"/>
+          <path d="M110 62C103 44 108 28 124 27C138 26 146 36 142 45C139 40 134 37 127 38C119 39 115 46 116 62Z" fill="#241510"/>
+          <path d="M126 28C134 19 148 24 146 36C142 31 135 29 126 28Z" fill="#33201a"/>
+          <path d="M113 34Q122 28 134 32" stroke="#5a3a28" strokeWidth="1.8" fill="none" strokeLinecap="round" opacity=".8"/>
+          <ellipse cx="116" cy="55" rx="3.8" ry="6" fill="#e5ab80"/><path d="M115.5 52Q118 55 115.5 58" stroke="#c98a5c" strokeWidth="1.2" fill="none"/>
+          <path d="M125 44Q131 41 137 44" stroke="#241510" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+          <g className="spx-eye"><ellipse cx="131" cy="50" rx="3.2" ry="3.5" fill="#fff"/><circle cx="132" cy="50.4" r="2.3" fill="#4a2b14"/><circle cx="132.3" cy="50.5" r="1.2" fill="#120a05"/><circle cx="133" cy="49.4" r=".8" fill="#fff"/>
+            <path d="M127.6 48.8Q131.4 46 135 48.6" stroke="#120a05" strokeWidth="1.5" fill="none" strokeLinecap="round"/></g>
+          <path d="M133 66Q137 69 141 64" stroke="#a24a3a" strokeWidth="1.7" fill="none" strokeLinecap="round"/>
+          <circle cx="127" cy="60" r="4.5" fill="#f08e7a" opacity=".33"/>
         </g>
 
-        {/* ── RED ROLLING SUITCASE (TROLLEY) ── */}
-        <g className="traveler-suitcase-group">
-          {/* Telescopic aluminum handle extending up into traveler's left hand */}
-          <g className="trolley-handle">
-            <line x1="30" y1="152" x2="68" y2="106" stroke="url(#metalPoles)" strokeWidth="3" strokeLinecap="round" />
-            <line x1="36" y1="152" x2="73" y2="107" stroke="url(#metalPoles)" strokeWidth="3" strokeLinecap="round" />
-            {/* Cross brace */}
-            <line x1="41" y1="139" x2="47" y2="140" stroke="#1e293b" strokeWidth="2.5" />
-            {/* Ergonomic handle grip */}
-            <rect
-              x="65"
-              y="101"
-              width="14"
-              height="7"
-              rx="3"
-              fill="#0f172a"
-              stroke="#334155"
-              strokeWidth="0.8"
-              transform="rotate(-40 72 104.5)"
-            />
-          </g>
+        {/*  near arm swinging  */}
+        <g className="spx-armN"><path d="M109 90Q119 84 128 92L126 138Q118 142 111 138Z" fill="url(#jkt)"/>
+          <g className="spx-foreN"><path d="M111 132Q118 136 126 132L124 166Q118 169 113 166Z" fill="url(#jkt)"/>
+            <rect x="111" y="160" width="14" height="8" rx="3" fill="#1b2f5e"/>
+            <ellipse cx="118" cy="177" rx="6.5" ry="9" fill="url(#skn)"/>
+          </g></g>
+      </g>
+    </svg>
+<svg className="spx-pose spx-back" viewBox="0 0 240 300" aria-hidden="true">
+      <defs><g id="bkLeg">
+        <path d="M89 148Q104 144 119 148L117 210L115 270Q104 273 94 270L92 210Z" fill="url(#pnt)"/>
+        <path d="M104 152V250" stroke="#12264d" strokeWidth="1.2" opacity=".4"/>
+        <rect x="92" y="252" width="25" height="8" rx="3" fill="#3d63a8"/>
+        <path d="M91 266H118L120 280C120 290 117 293 112 293H97C92 293 90 290 90 280Z" fill="#f7f8fb" stroke="#cdd3e0" strokeWidth="1"/>
+        <path d="M98 267V276M110 267V276" stroke="#c4cbdb" strokeWidth="1.5"/>
+        <path d="M90 289H120" stroke="#d4a437" strokeWidth="3.5" strokeLinecap="round"/>
+      </g></defs>
+      <ellipse cx="120" cy="295" rx="66" ry="5" fill="#000" opacity=".4"/>
+      <g className="spx-bobg">
+        <g className="spx-lgL"><use href="#bkLeg"/></g>
+        <g className="spx-lgR"><use href="#bkLeg" x="32"/></g>
 
-          {/* Suitcase Main Hardshell Body */}
-          <g className="trolley-case" transform="rotate(-7 36 182)">
-            {/* Ambient drop shadow behind case */}
-            <rect x="13" y="145" width="42" height="60" rx="8" fill="#000000" opacity="0.22" />
-
-            {/* Rich Red Luggage Shell */}
-            <rect x="14" y="144" width="42" height="60" rx="9" fill="url(#suitcaseBody)" stroke="#991b1b" strokeWidth="1.2" />
-            <rect x="14" y="144" width="42" height="60" rx="9" fill="url(#suitcaseGloss)" />
-
-            {/* Molded horizontal texture ribs */}
-            <path d="M20 156 H48 M20 164 H48 M20 172 H48 M20 180 H48 M20 188 H48" stroke="#ffffff" strokeWidth="1.2" strokeOpacity="0.32" strokeLinecap="round" />
-            <path d="M20 157 H48 M20 165 H48 M20 173 H48 M20 181 H48 M20 189 H48" stroke="#450a0a" strokeWidth="1" strokeOpacity="0.45" strokeLinecap="round" />
-
-            {/* Corner guards in matte black */}
-            <path d="M14 153 Q14 144 23 144" fill="none" stroke="#0f172a" strokeWidth="3.2" />
-            <path d="M47 144 Q56 144 56 153" fill="none" stroke="#0f172a" strokeWidth="3.2" />
-            <path d="M14 195 Q14 204 23 204" fill="none" stroke="#0f172a" strokeWidth="3.2" />
-            <path d="M47 204 Q56 204 56 195" fill="none" stroke="#0f172a" strokeWidth="3.2" />
-
-            {/* Perimeter zipper tape */}
-            <rect x="17" y="147" width="36" height="54" rx="7" fill="none" stroke="#1f2937" strokeWidth="0.8" strokeDasharray="3 2" opacity="0.6" />
-
-            {/* Side handle & gold Atithi badge */}
-            <rect x="11.5" y="168" width="4" height="14" rx="2" fill="#0f172a" />
-            <circle cx="35" cy="159" r="3.2" fill="#e2bf73" stroke="#b45309" strokeWidth="0.6" />
-
-            {/* Spinner Wheels (Rotates naturally with motion) */}
-            {/* Left Wheel */}
-            <g className="suitcase-wheel suitcase-wheel-left" style={{ transformOrigin: '23px 207px' }}>
-              <circle cx="23" cy="207" r="5.5" fill="#0f172a" stroke="#334155" strokeWidth="0.8" />
-              <circle cx="23" cy="207" r="2.8" fill="#cbd5e1" />
-              <line x1="23" y1="203" x2="23" y2="211" stroke="#475569" strokeWidth="1" />
-              <line x1="19" y1="207" x2="27" y2="207" stroke="#475569" strokeWidth="1" />
-            </g>
-
-            {/* Right Wheel */}
-            <g className="suitcase-wheel suitcase-wheel-right" style={{ transformOrigin: '47px 207px' }}>
-              <circle cx="47" cy="207" r="5.5" fill="#0f172a" stroke="#334155" strokeWidth="0.8" />
-              <circle cx="47" cy="207" r="2.8" fill="#cbd5e1" />
-              <line x1="47" y1="203" x2="47" y2="211" stroke="#475569" strokeWidth="1" />
-              <line x1="43" y1="207" x2="51" y2="207" stroke="#475569" strokeWidth="1" />
-            </g>
-          </g>
+        <g className="spx-caseB">
+          <path d="M164 204V170M180 204V170" stroke="#b9c0cd" strokeWidth="3.5" strokeLinecap="round"/>
+          <rect x="158" y="166" width="28" height="7" rx="3.5" fill="#e6e9f0"/>
+          <rect x="147" y="204" width="50" height="80" rx="9" fill="url(#csr)"/>
+          <path d="M158 212v64M170 212v64M182 212v64" stroke="#8c1816" strokeWidth="2.6" strokeLinecap="round" opacity=".55"/>
+          <rect x="147" y="204" width="50" height="80" rx="9" fill="none" stroke="#f4736b" strokeWidth="1.6"/>
+          <rect x="161" y="197" width="22" height="9" rx="4" fill="#7a1917"/>
+          <path d="M147 218h50M147 272h50" stroke="#d4a437" strokeWidth="2.5"/>
+          <circle cx="160" cy="288" r="5.5" fill="#1d2027"/><circle cx="184" cy="288" r="5.5" fill="#1d2027"/>
         </g>
 
-        {/* ── THE TRAVELER (YOUNG ADULT MALE 22-28 YRS OLD) ── */}
-        <g className="traveler-body-group">
+        {/*  jacket back + backpack  */}
+        <path d="M80 100C82 86 100 80 120 80C140 80 158 86 160 100L156 152H84Z" fill="url(#jkt)"/>
+        <path d="M120 96V150" stroke="#a8700f" strokeWidth="1.5" opacity=".45"/>
+        <path d="M104 82Q120 94 136 82V89Q120 101 104 89Z" fill="#1b2f5e"/>
+        <rect x="82" y="146" width="76" height="9" rx="4.5" fill="#1b2f5e"/>
+        <rect x="93" y="92" width="54" height="54" rx="14" fill="url(#bpk)"/>
+        <path d="M96 112H144" stroke="#3b4f8a" strokeWidth="1.8"/>
+        <rect x="93" y="118" width="11" height="22" rx="5" fill="#16224a"/><rect x="136" y="118" width="11" height="22" rx="5" fill="#16224a"/>
+        <rect x="108" y="120" width="24" height="20" rx="6" fill="#19264d" stroke="#2c3f75" strokeWidth="1.5"/>
+        <circle cx="120" cy="108" r="2" fill="#d4a437"/>
+        <path d="M110 92Q120 82 130 92" stroke="#0f1836" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
 
-          {/* 1. Back Arm (Left Arm, holding suitcase handle) */}
-          <g className="boy-back-arm" style={{ transformOrigin: '96px 85px' }}>
-            {/* White T-shirt sleeve */}
-            <path
-              d="M93 81 L82 96 L91 100 L100 85 Z"
-              fill="url(#shirtGrad)"
-              stroke="#cbd5e1"
-              strokeWidth="0.7"
-            />
-            {/* Athletic Forearm skin */}
-            <path
-              d="M84 95 L73 107 L78 112 L89 99 Z"
-              fill="url(#skinGrad)"
-            />
-            {/* Natural Hand gripping handle with articulated fingers */}
-            <g className="boy-hand-grip">
-              <circle cx="75" cy="108" r="5" fill="url(#skinGrad)" />
-              {/* Distinct fingers curled around grip */}
-              <path d="M71 105 Q75 102 78 105" stroke="#b87445" strokeWidth="1.2" fill="none" />
-              <path d="M72 108 Q76 105 79 108" stroke="#b87445" strokeWidth="1.2" fill="none" />
-              <path d="M73 111 Q77 108 80 111" stroke="#b87445" strokeWidth="1.2" fill="none" />
-            </g>
-          </g>
+        {/*  left arm swinging  */}
+        <g className="spx-armL"><path d="M76 98Q84 88 94 98L90 142Q83 147 77 141Z" fill="url(#jkt)"/>
+          <path d="M77 138Q84 143 91 138L90 168Q83 171 78 168Z" fill="url(#jkt)"/>
+          <rect x="77" y="162" width="14" height="8" rx="3" fill="#1b2f5e"/>
+          <ellipse cx="84" cy="178" rx="6.5" ry="8.5" fill="#e5ab80"/></g>
 
-          {/* 2. Back Leg (Right Leg) in Dark-Blue Trousers */}
-          <g className="boy-back-leg" style={{ transformOrigin: '108px 135px' }}>
-            {/* Thigh */}
-            <path
-              d="M101 133 L116 133 L113 170 L99 170 Z"
-              fill="url(#pantsBack)"
-            />
-            {/* Calf / Shin & Clean Sneaker */}
-            <g className="boy-back-shin" style={{ transformOrigin: '106px 170px' }}>
-              <path
-                d="M99 168 L113 168 L110 203 L98 203 Z"
-                fill="url(#pantsBack)"
-              />
-              {/* Trouser hem cuff */}
-              <line x1="98" y1="202" x2="110" y2="202" stroke="#2563eb" strokeWidth="1.2" strokeOpacity="0.5" />
+        {/*  neck + head from behind  */}
+        <rect x="112" y="64" width="16" height="22" rx="6" fill="#d99a6c"/>
+        <ellipse cx="120" cy="50" rx="19" ry="20" fill="url(#skn)"/>
+        <path d="M101 52C98 34 108 28 120 28C132 28 142 34 139 52C138 60 134 64 130 66H110C106 64 102 60 101 52Z" fill="#241510"/>
+        <path d="M108 62Q120 74 132 62L131 68H109Z" fill="#4a2c1c" opacity=".55"/>
+        <path d="M110 38Q120 30 130 38M114 46Q120 40 126 46" stroke="#4a2d1d" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+        <ellipse cx="100.5" cy="52" rx="3.5" ry="6" fill="#e5ab80"/><ellipse cx="139.5" cy="52" rx="3.5" ry="6" fill="#e5ab80"/>
 
-              {/* Modern White Sneaker Back */}
-              <g className="sneaker-back">
-                {/* Sneaker Upper */}
-                <path
-                  d="M95 203 Q99 198 109 200 L118 205 Q119 211 114 213 L93 213 Q92 208 95 203 Z"
-                  fill="#ffffff"
-                  stroke="#cbd5e1"
-                  strokeWidth="0.8"
-                />
-                {/* Dark Rubber Outsole */}
-                <path d="M93 210 H117 V214 H93 Z" fill="#0f172a" />
-                {/* Navy & gold accent flashes */}
-                <line x1="99" y1="205" x2="109" y2="205" stroke="#1d4ed8" strokeWidth="1.4" strokeLinecap="round" />
-                <line x1="102" y1="207" x2="108" y2="207" stroke="#e2bf73" strokeWidth="1" strokeLinecap="round" />
-              </g>
-            </g>
-          </g>
-
-          {/* 3. Front Leg (Left Leg) in Dark-Blue Trousers */}
-          <g className="boy-front-leg" style={{ transformOrigin: '98px 135px' }}>
-            {/* Thigh with natural contour */}
-            <path
-              d="M91 133 L106 133 L104 170 L89 170 Z"
-              fill="url(#pantsFront)"
-            />
-            {/* Trouser crease highlight & seam */}
-            <line x1="99" y1="137" x2="97" y2="166" stroke="#3b82f6" strokeWidth="1" strokeOpacity="0.35" />
-            <path d="M91 136 Q96 142 93 151" stroke="#0f1d38" strokeWidth="1.2" fill="none" opacity="0.6" />
-
-            {/* Calf / Shin & Clean Sneaker */}
-            <g className="boy-front-shin" style={{ transformOrigin: '96px 170px' }}>
-              <path
-                d="M89 168 L104 168 L101 203 L87 203 Z"
-                fill="url(#pantsFront)"
-              />
-              {/* Trouser hem cuff */}
-              <line x1="87" y1="202" x2="101" y2="202" stroke="#3b82f6" strokeWidth="1.2" strokeOpacity="0.5" />
-
-              {/* Modern White Sneaker Front */}
-              <g className="sneaker-front">
-                {/* Sneaker Upper */}
-                <path
-                  d="M85 203 Q89 197 100 199 L110 205 Q111 211 106 213 L83 213 Q82 208 85 203 Z"
-                  fill="#ffffff"
-                  stroke="#cbd5e1"
-                  strokeWidth="0.8"
-                />
-                {/* Dark Rubber Outsole */}
-                <path d="M83 210 H109 V214 H83 Z" fill="#0f172a" />
-                {/* Navy & gold athletic stripes */}
-                <line x1="90" y1="204" x2="101" y2="204" stroke="#1d4ed8" strokeWidth="1.6" strokeLinecap="round" />
-                <line x1="93" y1="206" x2="100" y2="206" stroke="#e2bf73" strokeWidth="1.1" strokeLinecap="round" />
-                {/* Lacing eyelets */}
-                <circle cx="93" cy="201" r="1.1" fill="#94a3b8" />
-                <circle cx="97" cy="201" r="1.1" fill="#94a3b8" />
-              </g>
-            </g>
-          </g>
-
-          {/* 4. Torso with Mustard-Orange Backpack & Well-fitted White Shirt */}
-          <g className="boy-torso">
-            {/* Fitted Mustard-Orange Backpack (Worn naturally on back) */}
-            <g className="boy-backpack">
-              {/* Main pack shell */}
-              <rect x="68" y="77" width="24" height="46" rx="10" fill="url(#backpackGrad)" stroke="#9a3412" strokeWidth="1.2" />
-              {/* Front accessory pocket */}
-              <rect x="66" y="93" width="20" height="25" rx="7" fill="url(#backpackFrontPocket)" stroke="#c2410c" strokeWidth="0.9" />
-              {/* Zipper seam line */}
-              <path d="M68 92 H84" stroke="#7c2d12" strokeWidth="1.2" strokeDasharray="2 1.5" />
-              <circle cx="83" cy="92" r="1.6" fill="#0f172a" />
-              {/* Top grab handle */}
-              <path d="M74 77 Q78 69 84 77" stroke="#9a3412" strokeWidth="3" fill="none" strokeLinecap="round" />
-            </g>
-
-            {/* Well-fitted White T-Shirt / Shirt */}
-            <path
-              d="M87 73 L113 73 Q119 102 111 135 L89 135 Q83 104 87 73 Z"
-              fill="url(#shirtGrad)"
-              stroke="#cbd5e1"
-              strokeWidth="0.8"
-            />
-
-            {/* Tailored Fabric Folds & Shading */}
-            <path d="M92 85 Q102 91 108 87" stroke="#cbd5e1" strokeWidth="1.2" fill="none" opacity="0.8" />
-            <path d="M90 105 Q100 111 107 107" stroke="#cbd5e1" strokeWidth="1.2" fill="none" opacity="0.7" />
-            <path d="M92 125 Q101 129 108 126" stroke="#cbd5e1" strokeWidth="1.1" fill="none" opacity="0.6" />
-
-            {/* Trouser waistband / dark belt */}
-            <rect x="89" y="132" width="22" height="4" fill="#0f172a" rx="1" />
-            <rect x="98" y="132.5" width="4" height="3" fill="#cbd5e1" rx="0.5" />
-
-            {/* Backpack shoulder strap looping over right shoulder and chest */}
-            <path
-              d="M96 74 Q103 92 100 134"
-              stroke="#9a3412"
-              strokeWidth="5"
-              strokeLinecap="round"
-              fill="none"
-            />
-            <path
-              d="M96 74 Q103 92 100 134"
-              stroke="#f59e0b"
-              strokeWidth="2.8"
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* Sternum strap buckle */}
-            <rect x="99" y="98" width="5" height="3" rx="1" fill="#0f172a" />
-          </g>
-
-          {/* 5. Front Arm (Right Arm, natural forward swing) */}
-          <g className="boy-front-arm" style={{ transformOrigin: '106px 85px' }}>
-            {/* White T-shirt sleeve */}
-            <path
-              d="M102 81 L118 83 L114 101 L100 97 Z"
-              fill="url(#shirtGrad)"
-              stroke="#cbd5e1"
-              strokeWidth="0.7"
-            />
-            {/* Defined forearm skin */}
-            <path
-              d="M104 98 L116 119 L122 116 L112 96 Z"
-              fill="url(#skinGrad)"
-            />
-            {/* Natural hand with distinct fingers & thumb relaxed in stride */}
-            <g className="boy-hand-front">
-              <circle cx="118" cy="121" r="5" fill="url(#skinGrad)" />
-              {/* Relaxed natural fingers */}
-              <path d="M116 120 Q120 125 122 120" stroke="#b87445" strokeWidth="1.1" fill="none" />
-              <path d="M115 122 Q119 127 121 123" stroke="#b87445" strokeWidth="1" fill="none" />
-            </g>
-          </g>
-
-          {/* 6. Head, Handsome Face & Smart Hairstyle */}
-          <g className="boy-head">
-            {/* Strong athletic neck */}
-            <rect x="97" y="62" width="11" height="15" fill="url(#skinGrad)" rx="3" />
-            <path d="M97 68 Q103 73 108 68" stroke="#d98048" strokeWidth="1.3" fill="none" opacity="0.6" />
-
-            {/* Well-proportioned Head Silhouette */}
-            <ellipse cx="103" cy="50" rx="14" ry="15" fill="url(#skinGrad)" />
-
-            {/* Defined Ear with interior contour */}
-            <ellipse cx="96" cy="52" rx="3.5" ry="4.5" fill="url(#skinGrad)" stroke="#c28859" strokeWidth="0.8" />
-            <path d="M95 50 Q97 52 95.5 54" stroke="#b87445" strokeWidth="0.9" fill="none" />
-
-            {/* Smart Modern Hairstyle (Layered, textured volume, clean fade) */}
-            <path
-              d="
-                M90 53
-                Q89 39 96 32
-                Q103 26 112 28
-                Q120 30 122 40
-                Q123 46 118 49
-                Q115 43 111 44
-                Q108 38 103 41
-                Q98 44 96 52
-                Z
-              "
-              fill="url(#hairGrad)"
-            />
-            {/* Hair texture strands & specular highlight */}
-            <path d="M96 32 Q105 26 114 31 Q118 34 122 39" stroke="url(#hairHighlight)" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-            <path d="M102 35 Q108 33 114 38" stroke="url(#hairHighlight)" strokeWidth="1.4" fill="none" strokeLinecap="round" />
-            <path d="M110 35 Q116 38 119 44" stroke="#4a3427" strokeWidth="1.3" fill="none" strokeLinecap="round" />
-
-            {/* Handsome Facial Features (22-28 young adult male) */}
-            {/* Confident almond eye with pupil and catchlight */}
-            <ellipse cx="111" cy="48" rx="2.2" ry="2.5" fill="#0f172a" />
-            <circle cx="111.8" cy="47.2" r="0.9" fill="#ffffff" />
-            <circle cx="110.5" cy="49" r="0.5" fill="#3b82f6" />
-            {/* Upper eyelash line */}
-            <path d="M108 46 Q111 44.5 114 46" stroke="#0f172a" strokeWidth="1.4" fill="none" strokeLinecap="round" />
-
-            {/* Smart groomed eyebrow */}
-            <path d="M107 42 Q111 39.8 115 42" stroke="#1f150e" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-
-            {/* Sculpted clean nose */}
-            <path d="M113 47 L117 51 L112 52.5" stroke="#b87445" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-
-            {/* Warm, confident smile */}
-            <path d="M108 57.5 Q112 60.5 116 57" stroke="#994018" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-            {/* Subtle smile dimple */}
-            <path d="M116.5 56 Q117.5 58 116 59.5" stroke="#c28859" strokeWidth="1" fill="none" />
-
-            {/* Soft natural cheek warmth */}
-            <circle cx="107" cy="52" r="3" fill="#f87171" opacity="0.25" />
-          </g>
-
-        </g>
-      </svg>
+        {/*  right arm on the suitcase handle  */}
+        <path d="M156 98L167 138" stroke="#c98d1c" strokeWidth="15" strokeLinecap="round"/>
+        <path d="M167 138L171 164" stroke="#c98d1c" strokeWidth="13" strokeLinecap="round"/>
+        <path d="M171 164L172 168" stroke="#1b2f5e" strokeWidth="13" strokeLinecap="round"/>
+        <circle cx="172" cy="172" r="7" fill="#e5ab80"/>
+      </g>
+    </svg>
+        </div>
+      </div>
     </div>
   );
 }
