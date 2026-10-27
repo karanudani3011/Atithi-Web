@@ -12,6 +12,12 @@ export function nextDate(value) {
   return localDateString(new Date(year, month - 1, day + 1));
 }
 
+export function daysBetween(start, end) {
+  const [sy, sm, sd] = start.split('-').map(Number);
+  const [ey, em, ed] = end.split('-').map(Number);
+  return Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(sy, sm - 1, sd)) / 86400000);
+}
+
 export function displayDate(value) {
   if (!value) return 'dd-mm-yyyy';
   const [year, month, day] = value.split('-');
