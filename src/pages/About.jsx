@@ -73,28 +73,30 @@ export default function About() {
   }, [active]);
 
   return <main className="ab-page">
-    <div className="ab-back ab-rv"><a href="#" aria-label="Back" onClick={(event) => { event.preventDefault(); navigate(-1); }}>←</a><h2>About Atithi</h2></div>
-    <section className="ab-top">
-      <AboutHero />
-      <div className="ab-about ab-rv ab-d1">
-        <h1>Atithi</h1><span className="ab-uline" id="ab-ul" />
-        <p>Welcome to Atithi Demo Hotel. Enjoy comfortable rooms, friendly service, and a relaxing stay.</p>
-        <AboutStats />
-      </div>
-    </section>
-    <section className="ab-sv">
-      <h2 className="ab-sec-t ab-rv">Our Services</h2>
-      <p className="ab-sv-sub ab-rv ab-d1">Tap a service, or just watch them glow.</p>
-      <ServiceOrbit services={services} active={active} onSelect={selectService} />
-    </section>
-    <section className="ab-offer">
-      <span className="ab-eyebrow ab-rv">Atithi Demo Hotel</span>
-      <h2 className="ab-sec-t ab-rv ab-d1">What we offer</h2>
-      <span className="ab-uline ab-rv ab-d2" />
-      <p className="ab-sv-sub ab-rv ab-d2 ab-offer-sub">Everything you need for a comfortable stay.</p>
-      <ServicePanels services={services} active={active} onSelect={selectService} deckRef={deckRef} />
-      <BellboyGuide services={services} active={active} boyRef={boyRef} deckRef={deckRef} />
-    </section>
-    <WhyChoose />
+    <div className="ab-container">
+      <div className="ab-back ab-rv"><a href="#" aria-label="Back" onClick={(event) => { event.preventDefault(); navigate(-1); }}>←</a><h2>About Atithi</h2></div>
+      <section className="ab-top">
+        <AboutHero />
+        <div className="ab-about ab-rv ab-d1">
+          <h1>Atithi</h1><span className="ab-uline" id="ab-ul" />
+          <p>Welcome to Atithi Demo Hotel. Enjoy comfortable rooms, friendly service, and a relaxing stay.</p>
+          <AboutStats />
+        </div>
+      </section>
+      <section className="ab-sv">
+        <h2 className="ab-sec-t ab-rv">Our Services</h2>
+        <p className="ab-sv-sub ab-rv ab-d1">Tap a service, or just watch them glow.</p>
+        <ServiceOrbit services={services} active={active} onSelect={selectService} />
+      </section>
+      <section className="ab-offer">
+        <span className="ab-eyebrow ab-rv">Atithi Demo Hotel</span>
+        <h2 className="ab-sec-t ab-rv ab-d1">What we offer</h2>
+        <span className="ab-uline ab-rv ab-d2" />
+        <p className="ab-sv-sub ab-rv ab-d2 ab-offer-sub">Everything you need for a comfortable stay.</p>
+        <ServicePanels services={services} active={active} onSelect={selectService} deckRef={deckRef} />
+        <BellboyGuide services={services} active={active} boyRef={boyRef} deckRef={deckRef} />
+      </section>
+      <WhyChoose />
+    </div>
   </main>;
 }
