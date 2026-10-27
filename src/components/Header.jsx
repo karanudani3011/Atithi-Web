@@ -10,6 +10,7 @@ const links = [
   ['Home', '/'],
   ['Rooms', '/rooms'],
   ['Booking', '/booking'],
+  ['My Bookings', '/my-bookings'],
   ['About Us', '/about'],
   ['Contact Us', '/contact'],
 ];

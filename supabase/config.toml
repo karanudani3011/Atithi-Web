@@ -1,0 +1,11 @@
+[functions.bookings-create]
+verify_jwt = false
+
+[functions.bookings-my]
+verify_jwt = false
+
+[functions.bookings-cancel]
+verify_jwt = false
+
+[functions.bookings-merge]
+verify_jwt = false

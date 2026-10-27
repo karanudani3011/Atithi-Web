@@ -19,7 +19,6 @@ DROP FUNCTION IF EXISTS public.sync_booking_status_and_reference();
 DROP FUNCTION IF EXISTS public.ensure_booking_reference();
 DROP FUNCTION IF EXISTS public.get_booked_ranges(uuid);
 DROP FUNCTION IF EXISTS public.get_available_room_ids(date,date);
-DROP FUNCTION IF EXISTS public.track_booking(text,text);
 DROP FUNCTION IF EXISTS public.admin_set_booking_status(uuid,text,boolean);
 DO $$ DECLARE f record; BEGIN
   FOR f IN SELECT p.oid::regprocedure AS signature
@@ -248,13 +247,6 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public,auth AS $
   ORDER BY r.sort_order
 $$;
 
-CREATE FUNCTION public.track_booking(p_ref text,p_email text)
-RETURNS TABLE(booking_ref text,room_id uuid,room_name text,check_in date,check_out date,adults integer,children integer,total_amount numeric,booking_status text,created_at timestamptz)
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,public,auth AS $$
-  SELECT b.booking_ref,b.room_id,r.room_name,b.check_in,b.check_out,b.adults,b.children,b.total_amount,b.booking_status,b.created_at
-  FROM public.bookings b JOIN public.rooms r ON r.id=b.room_id
-  WHERE upper(b.booking_ref)=upper(trim(p_ref)) AND lower(b.guest_email)=lower(trim(p_email)) LIMIT 1
-$$;
 
 REVOKE ALL ON FUNCTION public.create_booking(uuid,date,date,integer,integer,text,text,text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_booking(uuid,date,date,integer,integer,text,text,text,text) TO anon,authenticated;
@@ -264,8 +256,6 @@ REVOKE ALL ON FUNCTION public.get_booked_ranges(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_booked_ranges(uuid) TO anon,authenticated;
 REVOKE ALL ON FUNCTION public.get_available_room_ids(date,date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_available_room_ids(date,date) TO anon,authenticated;
-REVOKE ALL ON FUNCTION public.track_booking(text,text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.track_booking(text,text) TO anon,authenticated;
 
 -- RLS is applied after canonical RPCs/functions are in place.
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
@@ -278,3 +268,4 @@ CREATE POLICY bookings_team_manage ON public.bookings FOR ALL TO authenticated
 
 NOTIFY pgrst, 'reload schema';
 COMMIT;
+

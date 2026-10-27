@@ -11,19 +11,21 @@ export async function createBooking(form) {
     if (!availableIds.includes(String(form.roomId))) {
       throw new Error('Aa dates par room available nathi. Biji dates ke room select karo.');
     }
-    const { data, error } = await supabase.rpc('create_booking', {
-      p_room_id: form.roomId,
-      p_check_in: form.checkIn,
-      p_check_out: form.checkOut,
-      p_adults: Number(form.adults),
-      p_children: Number(form.children),
-      p_name: form.fullName.trim(),
-      p_email: form.email.trim(),
-      p_phone: form.phone.replace(/\D/g, ''),
-      p_notes: form.requests?.trim() || null,
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch('/api/bookings', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+      body: JSON.stringify({
+        roomId: form.roomId, checkIn: form.checkIn, checkOut: form.checkOut,
+        adults: Number(form.adults), children: Number(form.children),
+        fullName: form.fullName.trim(), email: form.email.trim(),
+        phone: form.phone.replace(/\D/g, ''), specialRequests: form.requests?.trim() || '',
+      }),
     });
-    if (error) throw error;
-    const result = Array.isArray(data) ? data[0] : data;
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || 'We could not complete this booking. Please try again.');
+    const result = payload.booking;
     if (!result?.booking_ref) throw new Error('Booking reference was not returned. Please contact Atithi support.');
     // TODO: invoke send-booking-confirmation after the email provider is configured.
     return { ...result, total: result.total_amount };
