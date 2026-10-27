@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Logo from './Logo.jsx';
 import { siteConfig } from '../data/siteConfig.js';
 
+const JUPICAL_URL = '';
+
 export default function Footer() {
   const [sent, setSent] = useState(false);
   const [email, setEmail] = useState('');
@@ -41,7 +43,13 @@ export default function Footer() {
       </div>
     </div>
     <div className="footer-bottom">
-      <span>© {new Date().getFullYear()} Atithi Hotel. All rights reserved.</span>
+      <div className="footer-credits">
+        <span>© {new Date().getFullYear()} Atithi Hotel. All rights reserved.</span>
+        <span className="footer-credit-line">
+          Crafted by :{' '}
+          {JUPICAL_URL ? <a href={JUPICAL_URL} target="_blank" rel="noopener noreferrer">Jupical Technologies Pvt. Ltd.</a> : <strong>Jupical Technologies Pvt. Ltd.</strong>}
+        </span>
+      </div>
       <span className="footer-blessing">अतिथि देवो भव · अतिथि भगवान है</span>
       <button type="button" className="footer-top" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Back to top"><ArrowUp size={17}/></button>
     </div>
