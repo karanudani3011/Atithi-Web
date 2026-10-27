@@ -4,7 +4,7 @@ import { adminSupabase } from '../lib/adminSupabase.js';
 const newChannelId = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 /** Owns one Supabase Realtime channel for this effect lifetime. */
-export default function useRealtimeTable({ table, onChange, enabled = true }) {
+export default function useRealtimeTable({ table, onChange, enabled = true, event = '*' }) {
   const onChangeRef = useRef(onChange);
   const [liveAvailable, setLiveAvailable] = useState(null);
   onChangeRef.current = onChange;
@@ -21,7 +21,7 @@ export default function useRealtimeTable({ table, onChange, enabled = true }) {
     try {
       channel = adminSupabase
         .channel(`admin-${table}-${newChannelId()}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table }, payload => {
+        .on('postgres_changes', { event, schema: 'public', table }, payload => {
           if (active) onChangeRef.current?.(payload);
         })
         .subscribe((status, error) => {
@@ -45,7 +45,7 @@ export default function useRealtimeTable({ table, onChange, enabled = true }) {
         });
       }
     };
-  }, [enabled, table]);
+  }, [enabled, table, event]);
 
   return { liveAvailable };
 }

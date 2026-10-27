@@ -5,7 +5,7 @@ import './RoleSelect.css';
 
 const roles = [
   { value: 'admin', label: 'Admin', description: 'Full access, team manage kari sake' },
-  { value: 'staff', label: 'Staff', description: 'Rooms, Bookings, Services, Messages' },
+  { value: 'staff', label: 'Staff', description: 'Bookings, Rooms, Services, Messages' },
 ];
 
 export default function RoleSelect({ value = 'staff', onChange, disabled = false, compact = false, id, label = 'Role' }) {

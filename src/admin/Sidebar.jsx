@@ -19,8 +19,8 @@ export default function Sidebar({ open, onClose }) {
   useRealtimeTable({ table: user?.id ? 'bookings' : null, onChange: refreshPendingCount });
   const items = [
     ...(isAdmin ? [['Dashboard', '/admin/dashboard', LayoutDashboard]] : []),
-    ['Rooms', '/admin/rooms', DoorOpen],
     ['Bookings', '/admin/bookings', CalendarCheck],
+    ['Rooms', '/admin/rooms', DoorOpen],
     ['Services', '/admin/services', ConciergeBell],
     ['Messages', '/admin/messages', Mail],
     ...(isAdmin ? [['Users', '/admin/users', Users], ['Access', '/admin/access', Shield]] : []),

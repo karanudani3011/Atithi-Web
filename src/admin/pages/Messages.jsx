@@ -18,7 +18,7 @@ export default function Messages() {
     finally { setLoading(false); }
   }, [query, page]);
   useEffect(() => { refresh(); }, [refresh]);
-  const { liveAvailable } = useRealtimeTable({ table: 'contact_messages', onChange: () => { void refresh(); } });
+  const { liveAvailable } = useRealtimeTable({ table: 'contact_messages', event: 'INSERT', onChange: () => { void refresh(); } });
 
   async function remove() {
     if (!pending || busy) return;

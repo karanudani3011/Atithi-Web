@@ -1,0 +1,4 @@
+.contact-honeypot{position:absolute!important;left:-10000px!important;top:auto!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important}
+.contact-form-error{margin:0;padding:11px 13px;border-radius:10px;background:#fff0ed;color:#a54136;font-size:12px;line-height:1.5}
+.contact-send-spinner{animation:contactSpin 1s linear infinite}
+@keyframes contactSpin{to{transform:rotate(360deg)}}
