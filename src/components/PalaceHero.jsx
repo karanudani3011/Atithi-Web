@@ -1,24 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-react';
+import { ArrowRight, Calendar } from 'lucide-react';
 
 export default function PalaceHero() {
-  const [, setSlideIndex] = useState(0);
-
-  // Manual slider arrow controls (preserved functionality without rotating image)
-  const prevSlide = () => {
-    setSlideIndex((prev) => (prev - 1 + 2) % 2);
-  };
-
-  const nextSlide = () => {
-    setSlideIndex((prev) => (prev + 1) % 2);
-  };
-
   return (
     <section className="palace-hero-section" aria-label="Atithi Luxury Palace Hero">
       {/* ── Background Palace Visual Layer (Fixed Hotel Image) ── */}
@@ -89,29 +73,6 @@ export default function PalaceHero() {
               4.9 / 5 from 2,400+ happy guests
             </span>
           </div>
-        </div>
-
-        {/* ── Hero Slider Controls (Bottom-Right Circular Buttons) ── */}
-        <div className="palace-slider-controls" aria-label="Hero slider navigation">
-          <button
-            type="button"
-            className="palace-slider-btn"
-            onClick={prevSlide}
-            aria-label="Previous view"
-            title="Previous view"
-          >
-            <ChevronLeft size={18} />
-          </button>
-
-          <button
-            type="button"
-            className="palace-slider-btn"
-            onClick={nextSlide}
-            aria-label="Next view"
-            title="Next view"
-          >
-            <ChevronRight size={18} />
-          </button>
         </div>
       </div>
     </section>
