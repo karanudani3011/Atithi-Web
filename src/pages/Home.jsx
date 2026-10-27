@@ -129,10 +129,6 @@ export default function Home() {
         <Reveal className="about-images">
           <Img src={rooms[2]?.image || '/hotel-about-day.jpg'} alt="Elegant Atithi suite" />
           <Img src={rooms[0]?.image || '/daylight-hotel.jpg'} alt="Warm hotel bedroom" />
-          <div className="experience">
-            <strong><Counter to={25} suffix="+" /></strong>
-            <span>YEARS OF<br />HOSPITALITY</span>
-          </div>
         </Reveal>
 
         <Reveal className="about-copy" direction="right">
