@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getAdminProfile, getAdminSession, listenAdminAuth, signInAdmin, signOutAdmin } from '../services/admin/adminAuthService.js';
+import { adminSupabase } from '../lib/adminSupabase.js';
+import { clearLoginHistoryDedupe, logLoginHistory } from '../lib/loginLog.js';
 
 const AdminAuthContext = createContext(null);
 
@@ -46,7 +48,12 @@ export function AdminAuthProvider({ children }) {
       setAuthError(error?.message || 'Could not restore the admin session.');
       setLoading(false);
     });
-    const { data: { subscription } } = listenAdminAuth((_event, nextSession) => {
+    const { data: { subscription } } = listenAdminAuth((event, nextSession) => {
+      if (event === 'SIGNED_IN' && nextSession?.user) {
+        queueMicrotask(() => { if (active) void logLoginHistory(nextSession, adminSupabase); });
+      } else if (event === 'SIGNED_OUT') {
+        clearLoginHistoryDedupe();
+      }
       if (active) queueMicrotask(() => active && resolve(nextSession));
     });
     return () => { active = false; subscription.unsubscribe(); };

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient.js';
+import { clearLoginHistoryDedupe, logLoginHistory } from '../lib/loginLog.js';
 import './Header.css';
 
 const links = [
@@ -51,6 +52,11 @@ export default function Header() {
     supabase.auth.getSession().then(({ data }) => { if (active) applySession(data.session); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (active) applySession(session);
+      if (_event === 'SIGNED_IN' && session?.user) {
+        queueMicrotask(() => { if (active) void logLoginHistory(session, supabase); });
+      } else if (_event === 'SIGNED_OUT') {
+        clearLoginHistoryDedupe();
+      }
     });
     return () => { active = false; subscription.unsubscribe(); };
   }, [navigate]);

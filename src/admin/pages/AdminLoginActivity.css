@@ -9,7 +9,7 @@
 .admin-login-activity-filter-label{display:block}
 .admin-login-activity-filter{height:43px;min-width:150px;padding:0 12px;border:1px solid #e5ded3;border-radius:11px;background:#fffdf9;color:#4e586b;font:11px 'DM Sans',sans-serif}
 .admin-login-activity-table-wrap{width:100%}
-.admin-login-activity-table{min-width:700px}
+.admin-login-activity-table{min-width:960px}
 .admin-login-activity-table th:first-child,.admin-login-activity-table td:first-child{width:85px}
 .admin-login-activity-table td:nth-child(2){font-weight:600;color:#26324a}
 .admin-login-activity-loading{min-height:180px}

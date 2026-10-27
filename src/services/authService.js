@@ -1,5 +1,4 @@
 import { ensureSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
-import { logLogin } from '../lib/loginLog.js';
 
 export async function authenticateGuest({ name, email, password, register = false }) {
   ensureSupabaseConfigured();
@@ -24,7 +23,6 @@ export async function authenticateGuest({ name, email, password, register = fals
     }
     throw result.error;
   }
-  if (!register && result.data.user) void logLogin(result.data.user);
   if (result.data.session?.access_token) {
     try {
       await fetch('/api/bookings/merge', {
