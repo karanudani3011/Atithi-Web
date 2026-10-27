@@ -1,7 +1,6 @@
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { useState } from 'react';
 import { supabase } from './lib/supabaseClient.js';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';

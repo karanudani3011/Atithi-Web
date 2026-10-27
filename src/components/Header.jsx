@@ -38,12 +38,22 @@ export default function Header() {
 
   useEffect(() => {
     let active = true;
-    supabase.auth.getSession().then(({ data }) => { if (active) setUser(data.session?.user || null); });
+    const applySession = (session) => {
+      setUser(session?.user || null);
+      if (session?.user) {
+        const savedPath = sessionStorage.getItem('atithi-auth-redirect');
+        if (savedPath?.startsWith('/') && !savedPath.startsWith('//')) {
+          sessionStorage.removeItem('atithi-auth-redirect');
+          navigate(savedPath, { replace: true });
+        }
+      }
+    };
+    supabase.auth.getSession().then(({ data }) => { if (active) applySession(data.session); });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) setUser(session?.user || null);
+      if (active) applySession(session);
     });
     return () => { active = false; subscription.unsubscribe(); };
-  }, []);
+  }, [navigate]);
 
   const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Account';
 
