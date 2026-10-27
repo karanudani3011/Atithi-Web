@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabaseClient.js';
 import './Header.css';
 
 const links = [
@@ -18,20 +19,39 @@ function HouseMark() {
   </svg>;
 }
 
-function LoginContents() {
+function LoginContents({ label = 'Login / Register' }) {
   return <>
     <span className="av"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4.5 4.5-6 8-6s7 1.5 8 6" /></svg></span>
-    Login
+    {label}
     <svg className="ar" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6" /></svg>
   </>;
 }
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [user, setUser] = useState(null);
   const pillRef = useRef(null);
   const linkItemRefs = useRef([]);
+
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => { if (active) setUser(data.session?.user || null); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setUser(session?.user || null);
+    });
+    return () => { active = false; subscription.unsubscribe(); };
+  }, []);
+
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Account';
+
+  async function handleLogout() {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error('[auth] sign out failed', error);
+    else navigate('/');
+  }
 
   const activeIndex = Math.max(0, links.findIndex(({ path }) => {
     if (path === '/') return location.pathname === '/' || location.pathname === '/home';
@@ -93,7 +113,8 @@ export default function Header() {
       </ul>
     </nav>
 
-    <NavLink className="login desktop-login" to="/login" aria-label="Login"><LoginContents /></NavLink>
+    {user ? <div className="header-account desktop-account"><span className="header-account-name" title={userName}>{userName}</span><button type="button" className="login" onClick={handleLogout}>Logout</button></div>
+      : <NavLink className="login desktop-login" to="/login" aria-label="Login or register"><LoginContents /></NavLink>}
 
     <button className={`burger${menuOpen ? ' open' : ''}`} type="button" aria-label={menuOpen ? 'Close menu' : 'Open menu'} aria-expanded={menuOpen} aria-controls="atithi-mobile-menu" onClick={() => setMenuOpen((open) => !open)}>
       <i aria-hidden="true" /><i aria-hidden="true" /><i aria-hidden="true" />
@@ -103,7 +124,8 @@ export default function Header() {
       {links.map(({ label, path }) => (
         <NavLink key={path} to={path} end={path === '/' && location.pathname !== '/home'} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} className={({ isActive }) => isActive ? 'on' : undefined}>{label}</NavLink>
       ))}
-      <NavLink className="login" to="/login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} aria-label="Login"><LoginContents /></NavLink>
+      {user ? <div className="mobile-account"><span>{userName}</span><button type="button" className="login" onClick={() => { setMenuOpen(false); handleLogout(); }}>Logout</button></div>
+        : <NavLink className="login" to="/login" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} aria-label="Login or register"><LoginContents /></NavLink>}
     </div>
 
     <div className="header-progress" aria-hidden="true" style={{ width: `${scrollProgress}%` }} />

@@ -1,11 +1,30 @@
 import { ensureSupabaseConfigured, supabase } from '../lib/supabaseClient.js';
+import { logLogin } from '../lib/loginLog.js';
 
 export async function authenticateGuest({ name, email, password, register = false }) {
   ensureSupabaseConfigured();
+  const fullName = name?.trim() || '';
+  const normalizedEmail = String(email ?? '')
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim()
+    .toLowerCase();
   const result = register
-    ? await supabase.auth.signUp({ email, password, options: { data: { name: name?.trim() || '' } } })
-    : await supabase.auth.signInWithPassword({ email, password });
-  if (result.error) throw new Error(result.error.message);
+    ? await supabase.auth.signUp({ email: normalizedEmail, password, options: { data: { full_name: fullName } } })
+    : await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
+  if (result.error) {
+    if (register) {
+      // Keep provider diagnostics visible while signup failures are being investigated.
+      console.error('[signup] Supabase Auth rejected the request:', {
+        status: result.error.status,
+        code: result.error.code,
+        message: result.error.message,
+        error: result.error,
+      });
+    }
+    throw result.error;
+  }
+  if (!register && result.data.user) void logLogin(result.data.user);
   if (result.data.session?.access_token) {
     try {
       await fetch('/api/bookings/merge', {

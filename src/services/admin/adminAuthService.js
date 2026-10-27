@@ -1,4 +1,5 @@
 import { adminSupabase as db, ensureAdminSupabase } from '../../lib/adminSupabase.js';
+import { logLogin } from '../../lib/loginLog.js';
 
 export async function signInAdmin(id, password) {
   ensureAdminSupabase();
@@ -32,6 +33,7 @@ export async function signInAdmin(id, password) {
   if (!result?.data) return deny('You do not have access to the admin panel.');
   if (result.data.is_active !== true) return deny('Your access has been disabled. Please contact an admin.');
   if (!['admin', 'staff'].includes(result.data.role)) return deny('You do not have access to the admin panel.');
+  void logLogin(data.user, db);
   return {
     user: { id: result.data.id, name: result.data.name, email: result.data.email, role: result.data.role },
     session: data.session,

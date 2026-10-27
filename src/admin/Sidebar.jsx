@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, DoorOpen, CalendarCheck, Shield, LogOut, ExternalLink, X, ConciergeBell, Mail, Users } from 'lucide-react';
+import { LayoutDashboard, DoorOpen, CalendarCheck, Shield, LogOut, ExternalLink, X, ConciergeBell, Mail, Users, History } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Logo from '../components/Logo.jsx';
 import { useAdminAuth } from '../context/AdminAuthContext.jsx';
@@ -23,7 +23,7 @@ export default function Sidebar({ open, onClose }) {
     ['Rooms', '/admin/rooms', DoorOpen],
     ['Services', '/admin/services', ConciergeBell],
     ['Messages', '/admin/messages', Mail],
-    ...(isAdmin ? [['Users', '/admin/users', Users], ['Access', '/admin/access', Shield]] : []),
+    ...(isAdmin ? [['Users', '/admin/users', Users], ['Login Activity', '/admin/login-activity', History], ['Access', '/admin/access', Shield]] : []),
   ];
 
   async function handleLogout() {
